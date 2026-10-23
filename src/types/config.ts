@@ -1,71 +1,58 @@
-import { z } from "zod";
+/**
+ * Card configuration. All power entities are read in W (kW is converted
+ * automatically from unit_of_measurement).
+ *
+ * Sign conventions:
+ *  - battery.power_entity: positive = discharging, negative = charging
+ *    (set `invert: true` if your sensor is the other way round)
+ *  - grid.power_entity: positive = importing (or generator running)
+ */
+export interface NodeConfig {
+  power_entity?: string;
+  name?: string;
+  icon?: string;
+}
 
-export const CardConfigSchema = z.object({
-  type: z.string(),
-  title: z.string().optional().default("Home Energy"),
+export interface CardConfig {
+  type: string;
+  /** Optional header text. Omit for no header. */
+  title?: string;
 
-  home: z
-    .object({
-      consumption_entity: z.string().optional(),
-      show_self_consumption: z.boolean().optional().default(true),
-    })
-    .optional()
-    .default({}),
+  hub?: {
+    /** Entity giving self-consumption / solar share %, otherwise calculated. */
+    self_consumption_entity?: string;
+  };
 
-  grid: z
-    .object({
-      power_entity: z.string().optional(),
-    })
-    .optional()
-    .default({}),
+  home?: NodeConfig;
 
-  solar: z
-    .object({
-      power_entity: z.string().optional(),
-      daily_entity: z.string().optional(),
-    })
-    .optional()
-    .default({}),
+  solar?: NodeConfig & {
+    daily_entity?: string;
+  };
 
-  battery: z
-    .object({
-      display_name: z.string().optional().default("libbi"),
-      provider: z
-        .enum(["ha-entity", "selectronic", "rest", "mqtt"])
-        .optional()
-        .default("ha-entity"),
-      power_entity: z.string().optional(),
-      soc_entity: z.string().optional(),
-      capacity_kwh: z.number().optional(),
-      rest_sensor: z.string().optional(),
-    })
-    .optional(),
+  battery?: NodeConfig & {
+    soc_entity?: string;
+    invert?: boolean;
+  };
 
-  devices: z
-    .object({
-      zappi: z
-        .object({
-          serial: z.union([z.string(), z.number()]).optional(),
-        })
-        .optional(),
-      eddi: z
-        .object({
-          serial: z.union([z.string(), z.number()]).optional(),
-        })
-        .optional(),
-    })
-    .optional()
-    .default({}),
+  /** Grid connection, or generator for off-grid sites. */
+  grid?: NodeConfig & {
+    /** Hide the node (keeping its slot) while it's idle. Handy for generators. */
+    hide_when_idle?: boolean;
+  };
 
-  display: z
-    .object({
-      flow_animation_speed: z
-        .enum(["auto", "fast", "slow", "off"])
-        .optional()
-        .default("auto"),
-    })
-    .optional()
-    .default({}),
-});
+  zappi?: NodeConfig & {
+    /** e.g. select.zappi_charge_mode — shown under the label */
+    mode_entity?: string;
+  };
 
-export type CardConfig = z.infer<typeof CardConfigSchema>;
+  eddi?: NodeConfig & {
+    /** e.g. sensor.eddi_status — shown under the label */
+    status_entity?: string;
+  };
+
+  display?: {
+    flow_animation_speed?: "auto" | "fast" | "slow" | "off";
+    /** Below this many watts a flow is treated as idle. Default 30. */
+    idle_threshold_w?: number;
+  };
+}

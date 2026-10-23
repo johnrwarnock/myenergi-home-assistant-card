@@ -1,27 +1,26 @@
-export type NodeId = "home" | "grid" | "solar" | "libbi" | "zappi" | "eddi";
+export type NodeId = "home" | "grid" | "solar" | "battery" | "zappi" | "eddi";
 
 export interface NodeDef {
   id: NodeId;
   label: string;
+  icon: string;
   color: string;
   powerW: number;
   subLabel?: string;
   active: boolean;
+  hidden?: boolean;
 }
 
 export interface SpokeDef {
-  from: NodeId;
-  to: NodeId;
+  node: NodeId;
   powerW: number;
-  /** chevron flow direction: 'forward' = from→to, 'reverse' = to→from */
-  direction: "forward" | "reverse" | "idle";
-  /** colour semantics: green=solar, red=grid-import, yellow=distribution */
+  /** 'in' = node → hub, 'out' = hub → node */
+  direction: "in" | "out" | "idle";
   chevronColor: string;
 }
 
 export interface CardState {
   nodes: NodeDef[];
   spokes: SpokeDef[];
-  selfConsumptionPct: number;
-  title: string;
+  selfConsumptionPct: number | null;
 }

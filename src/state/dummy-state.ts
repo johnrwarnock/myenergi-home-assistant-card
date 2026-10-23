@@ -1,24 +1,35 @@
-import type { CardState } from "../types/flow.js";
-import { COLORS } from "../layout/theme.js";
+import type { CardConfig } from "../types/config.js";
+import type { HassLike } from "./build-state.js";
 
-/** Static dummy data used during M2 scaffold — replaced by real HA entities in M3.
- *  Node order: home(0°) → libbi(72°) → solar(144°) → zappi(216°) → eddi(288°)
- *  Centre node = leaf/self-consumption only. Home is a peripheral node at 12 o'clock.
- */
-export const DUMMY_STATE: CardState = {
-  title: "The Poplars",
-  selfConsumptionPct: 100,
-  nodes: [
-    { id: "home",  label: "home",  color: COLORS.home,  powerW: 2500, active: true },
-    { id: "libbi", label: "libbi", color: COLORS.libbi,  powerW: 1100, active: true },
-    { id: "solar", label: "solar", color: COLORS.solar,  powerW: 4100, active: true },
-    { id: "zappi", label: "zappi", color: COLORS.zappi,  powerW: 500,  active: true },
-    { id: "eddi",  label: "eddi",  color: COLORS.eddi,   powerW: 0,    active: false },
-  ],
-  spokes: [
-    { from: "solar", to: "home",  powerW: 4100, direction: "forward", chevronColor: COLORS.chevGreen  },
-    { from: "home",  to: "libbi", powerW: 1100, direction: "forward", chevronColor: COLORS.chevYellow },
-    { from: "home",  to: "zappi", powerW: 500,  direction: "forward", chevronColor: COLORS.chevYellow },
-    { from: "home",  to: "eddi",  powerW: 0,    direction: "idle",    chevronColor: COLORS.chevYellow },
-  ],
+/** Fake hass + config used by preview.html and the card picker preview. */
+export const DUMMY_CONFIG: CardConfig = {
+  type: "custom:myenergi-flow-card",
+  hub: { self_consumption_entity: "sensor.demo_self" },
+  solar: { power_entity: "sensor.demo_solar", daily_entity: "sensor.demo_solar_today" },
+  home: { power_entity: "sensor.demo_home" },
+  eddi: { power_entity: "sensor.demo_eddi", status_entity: "sensor.demo_eddi_status" },
+  zappi: { power_entity: "sensor.demo_zappi", mode_entity: "sensor.demo_zappi_mode" },
+  battery: { power_entity: "sensor.demo_batt", soc_entity: "sensor.demo_soc" },
+  grid: { power_entity: "sensor.demo_grid" },
+};
+
+const s = (state: string, unit?: string) => ({
+  state,
+  attributes: unit ? { unit_of_measurement: unit } : {},
+});
+
+export const DUMMY_HASS: HassLike = {
+  states: {
+    "sensor.demo_self": s("87", "%"),
+    "sensor.demo_solar": s("4100", "W"),
+    "sensor.demo_solar_today": s("14.6", "kWh"),
+    "sensor.demo_home": s("650", "W"),
+    "sensor.demo_eddi": s("0", "W"),
+    "sensor.demo_eddi_status": s("Max temp reached"),
+    "sensor.demo_zappi": s("2.3", "kW"),
+    "sensor.demo_zappi_mode": s("Eco+"),
+    "sensor.demo_batt": s("-1100", "W"),
+    "sensor.demo_soc": s("62", "%"),
+    "sensor.demo_grid": s("0", "W"),
+  },
 };

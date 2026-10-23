@@ -9,11 +9,12 @@ export interface NodePosition {
 }
 
 /**
- * Places N peripheral nodes evenly on a circle, first node at 0° (12 o'clock),
- * subsequent nodes clockwise. Returns pixel coordinates for each node.
+ * Places nodes evenly on a circle, first at 12 o'clock, clockwise.
+ * Slots are fixed by the id list so a hidden node leaves a gap rather
+ * than making everything jump around.
  */
 export function radialPositions(
-  ids: NodeId[],
+  ids: readonly NodeId[],
   orbitR = ORBIT_R,
   cx = CENTRE_X,
   cy = CENTRE_Y

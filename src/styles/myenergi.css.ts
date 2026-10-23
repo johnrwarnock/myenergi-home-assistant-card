@@ -1,94 +1,46 @@
 import { css } from "lit";
 
 export const cardStyles = css`
-  @import url('https://fonts.googleapis.com/css2?family=Overpass:ital,wght@0,300;0,400;0,700;0,800;1,800&display=swap');
-
   :host {
     display: block;
-    font-family: 'Overpass', sans-serif;
   }
 
-  .card-root {
-    background: #1a1a1a;
-    border-radius: 16px;
-    padding: 16px;
+  ha-card {
+    background: var(--myenergi-flow-bg, #1a1a1a);
+    padding: 12px 8px 8px;
     color: #ffffff;
-    font-family: 'Overpass', sans-serif;
+    font-family: var(--ha-font-family-body, var(--paper-font-body1_-_font-family, Roboto, sans-serif));
     user-select: none;
   }
 
   .card-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-bottom: 8px;
-    padding: 0 2px;
-  }
-
-  .card-title {
-    font-size: 13px;
-    font-weight: 800;
-    font-style: italic;
-    letter-spacing: 0.4px;
-    text-transform: lowercase;
-    color: #ffffff;
-  }
-
-  .hamburger {
-    font-size: 18px;
-    color: #cecdcd;
-    cursor: pointer;
-    line-height: 1;
+    font-size: 16px;
+    font-weight: 600;
+    padding: 0 8px 4px;
+    color: var(--primary-text-color, #fff);
   }
 
   .card-svg {
     display: block;
     width: 100%;
+    max-width: 460px;
+    margin: 0 auto;
     height: auto;
     overflow: visible;
   }
 
-  .card-footer {
+  .node-icon {
+    --mdc-icon-size: 22px;
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 10px 0 4px;
-    gap: 6px;
-    opacity: 0.7;
+    width: 24px;
+    height: 24px;
+    color: #ffffff;
   }
 
-  .footer-text {
-    font-size: 10px;
-    font-weight: 700;
-    letter-spacing: 1px;
-    color: #40ff7a;
-    text-transform: lowercase;
-  }
-
-  /* node labels rendered as foreignObject or SVG text */
-  .node-power {
-    font-family: 'Overpass', sans-serif;
-    font-weight: 800;
-    font-style: italic;
-    font-size: 13px;
-    fill: currentColor;
-  }
-
-  .node-label {
-    font-family: 'Overpass', sans-serif;
-    font-weight: 700;
-    font-size: 9px;
-    letter-spacing: 1px;
-    text-transform: uppercase;
-    fill: #cecdcd;
-  }
-
-  .self-pct {
-    font-family: 'Overpass', sans-serif;
-    font-weight: 800;
-    font-style: italic;
-    font-size: 13px;
-    fill: #84ff00;
+  .node-icon.idle {
+    color: #8a8a8a;
   }
 
   @keyframes chev {
@@ -96,8 +48,7 @@ export const cardStyles = css`
     to   { stroke-dashoffset: -36; }
   }
 
-  @keyframes pulse {
-    0%, 100% { opacity: 1; }
-    50%       { opacity: 0.4; }
+  @media (prefers-reduced-motion: reduce) {
+    line { animation: none !important; }
   }
 `;
