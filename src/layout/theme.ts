@@ -16,6 +16,7 @@ export const COLORS = {
 
 export const HUB_R = 40;
 export const NODE_R = 34;
+export const NODE_ICON_SIZE = NODE_R * 2 * 0.65;
 export const ORBIT_R = 140;
 
 /** Card SVG viewBox dimensions */

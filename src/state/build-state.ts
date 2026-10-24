@@ -36,6 +36,10 @@ function readText(hass: HassLike, entityId?: string): string | undefined {
   return s;
 }
 
+function hasStatus(status: string | undefined, pattern: RegExp): boolean {
+  return !!status && pattern.test(status);
+}
+
 export function buildState(hass: HassLike, cfg: CardConfig): CardState {
   const thr = cfg.display?.idle_threshold_w ?? 30;
   const pos = (w: number | null) => Math.max(0, w ?? 0);
@@ -58,6 +62,7 @@ export function buildState(hass: HassLike, cfg: CardConfig): CardState {
 
   // ---- what's feeding the hub, and who's winning ------------------------
   const inbound = solarW + gridImportW + battDischargeW;
+  const generationW = solarW + battDischargeW;
   let mixColour: string = COLORS.solar;
   if (inbound > thr) {
     if (solarW >= inbound / 2) mixColour = COLORS.solar;
@@ -107,6 +112,11 @@ export function buildState(hass: HassLike, cfg: CardConfig): CardState {
         icon: cfg.home.icon ?? "mdi:home",
         color: COLORS.home,
         powerW: homeW,
+        houseMood: soc !== null && soc < 40
+          ? "frown"
+          : generationW > 0 && generationW >= homeW
+            ? "smile"
+            : "neutral",
         active: homeW > thr,
       },
       { node: "home", powerW: homeW, direction: idleOut(homeW), chevronColor: mixColour }
@@ -114,6 +124,13 @@ export function buildState(hass: HassLike, cfg: CardConfig): CardState {
   }
 
   if (cfg.eddi?.power_entity) {
+    const eddiStatus = readText(hass, cfg.eddi.status_entity);
+    const eddiAtMaxTemp = hasStatus(
+      eddiStatus,
+      /\bmax(?:imum)?\s+temp(?:erature)?\s+reached\b/i
+    );
+    const eddiDiverting = !eddiStatus || /\bdivert(?:ing)?\b/i.test(eddiStatus);
+    const eddiActive = eddiW > thr && eddiDiverting && !eddiAtMaxTemp;
     add(
       {
         id: "eddi",
@@ -121,14 +138,21 @@ export function buildState(hass: HassLike, cfg: CardConfig): CardState {
         icon: cfg.eddi.icon ?? "mdi:water-boiler",
         color: COLORS.eddi,
         powerW: eddiW,
-        subLabel: readText(hass, cfg.eddi.status_entity),
-        active: eddiW > thr,
+        subLabel: eddiStatus,
+        active: eddiActive,
+        complete: eddiAtMaxTemp,
       },
-      { node: "eddi", powerW: eddiW, direction: idleOut(eddiW), chevronColor: mixColour }
+      {
+        node: "eddi",
+        powerW: eddiW,
+        direction: eddiActive ? idleOut(eddiW) : "idle",
+        chevronColor: mixColour,
+      }
     );
   }
 
   if (cfg.zappi?.power_entity) {
+    const zappiStatus = readText(hass, cfg.zappi.status_entity);
     add(
       {
         id: "zappi",
@@ -138,6 +162,10 @@ export function buildState(hass: HassLike, cfg: CardConfig): CardState {
         powerW: zappiW,
         subLabel: readText(hass, cfg.zappi.mode_entity),
         active: zappiW > thr,
+        complete: hasStatus(
+          zappiStatus,
+          /^(?:fully\s+charged|charge\s+complete(?:d)?|charged)$/i
+        ),
       },
       { node: "zappi", powerW: zappiW, direction: idleOut(zappiW), chevronColor: mixColour }
     );
@@ -156,6 +184,7 @@ export function buildState(hass: HassLike, cfg: CardConfig): CardState {
         color: COLORS.battery,
         powerW: charging ? battChargeW : battDischargeW,
         subLabel: sub,
+        socPct: soc === null ? null : Math.max(0, Math.min(100, soc)),
         active: battChargeW > thr || battDischargeW > thr,
       },
       {

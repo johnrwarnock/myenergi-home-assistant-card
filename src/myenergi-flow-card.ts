@@ -5,7 +5,7 @@ import { radialPositions } from "./layout/radial-layout.js";
 import type { NodePosition } from "./layout/radial-layout.js";
 import { renderSpokes } from "./layout/flow-renderer.js";
 import {
-  COLORS, HUB_R, NODE_R, SVG_W, SVG_H, CENTRE_X, CENTRE_Y, SLOT_ORDER,
+  COLORS, HUB_R, NODE_R, NODE_ICON_SIZE, SVG_W, SVG_H, CENTRE_X, CENTRE_Y, SLOT_ORDER,
 } from "./layout/theme.js";
 import { leafIcon, M2_DEFAULT_ICONS, m2NodeIcon } from "./icons/icons.js";
 import { buildState } from "./state/build-state.js";
@@ -64,7 +64,7 @@ class MyenergiFlowCard extends LitElement {
       c.home?.power_entity,
       c.battery?.power_entity, c.battery?.soc_entity,
       c.grid?.power_entity,
-      c.zappi?.power_entity, c.zappi?.mode_entity,
+      c.zappi?.power_entity, c.zappi?.mode_entity, c.zappi?.status_entity,
       c.eddi?.power_entity, c.eddi?.status_entity,
     ].filter((x): x is string => !!x);
   }
@@ -74,17 +74,16 @@ class MyenergiFlowCard extends LitElement {
     const stroke = node.active ? node.color : COLORS.dim;
     const valueColour = node.active ? node.color : COLORS.muted;
     const useM2Icon = node.icon === M2_DEFAULT_ICONS[node.id];
-
-    // Label above the top node, below everything else
-    const above = pos.angleDeg === 0;
-    const labelY = above ? pos.cy - NODE_R - 24 : pos.cy + NODE_R + 16;
-    const subY = labelY + 14;
+    const powerY = node.id === "home"
+      ? pos.cy - NODE_R - 12
+      : pos.cy + NODE_R + 18;
+    const iconYOffset = node.id === "home" ? -3 : 0;
 
     return svg`
       <circle cx="${pos.cx}" cy="${pos.cy}" r="${NODE_R}"
         fill="url(#node-grad-${node.id})" stroke="${stroke}" stroke-width="2.5"/>
       <defs>
-        <radialGradient id="node-grad-${node.id}" cx="50%" cy="35%" r="70%">
+        <radialGradient id="node-grad-${node.id}" cx="50%" cy="65%" r="70%">
           <stop offset="0%" stop-color="${stroke}" stop-opacity="0.3"/>
           <stop offset="100%" stop-color="${COLORS.card}" stop-opacity="0.96"/>
         </radialGradient>
@@ -92,28 +91,34 @@ class MyenergiFlowCard extends LitElement {
       ${
         useM2Icon
           ? svg`
-              <foreignObject x="${pos.cx - 12}" y="${pos.cy - 22}" width="24" height="24">
+              <foreignObject x="${pos.cx - NODE_ICON_SIZE / 2}" y="${pos.cy - NODE_ICON_SIZE / 2 + iconYOffset}"
+                width="${NODE_ICON_SIZE}" height="${NODE_ICON_SIZE}">
                 <div xmlns="http://www.w3.org/1999/xhtml" class="node-icon">
-                  ${m2NodeIcon(node.id)}
+                  ${m2NodeIcon(node.id, node.socPct ?? null, node.houseMood ?? "neutral")}
                 </div>
               </foreignObject>
             `
           : svg`
-              <foreignObject x="${pos.cx - 12}" y="${pos.cy - 22}" width="24" height="24">
+              <foreignObject x="${pos.cx - NODE_ICON_SIZE / 2}" y="${pos.cy - NODE_ICON_SIZE / 2 + iconYOffset}"
+                width="${NODE_ICON_SIZE}" height="${NODE_ICON_SIZE}">
                 <div xmlns="http://www.w3.org/1999/xhtml" class="node-icon ${node.active ? "" : "idle"}">
                   <ha-icon icon="${node.icon}"></ha-icon>
                 </div>
               </foreignObject>
             `
       }
-      <text x="${pos.cx}" y="${pos.cy + 17}" text-anchor="middle"
-        font-size="13" font-weight="700" fill="${valueColour}">${formatPower(node.powerW)}</text>
-      <text x="${pos.cx}" y="${labelY}" text-anchor="middle"
-        font-size="12" font-weight="700" fill="${COLORS.text}">${node.label}</text>
+      <text x="${pos.cx}" y="${powerY}" text-anchor="middle"
+        font-size="14.95" font-weight="400" fill="${valueColour}">${formatPower(node.powerW)}</text>
       ${
-        node.subLabel
-          ? svg`<text x="${pos.cx}" y="${subY}" text-anchor="middle"
-              font-size="11" fill="${COLORS.muted}">${node.subLabel}</text>`
+        node.complete
+          ? svg`
+              <circle cx="${pos.cx + NODE_R * 0.72}" cy="${pos.cy - NODE_R * 0.72}" r="10"
+                fill="${COLORS.card}" stroke="${node.color}" stroke-width="2"/>
+              <path d="M ${pos.cx + NODE_R * 0.72 - 4} ${pos.cy - NODE_R * 0.72}
+                l 3 3 5 -6"
+                fill="none" stroke="#ffffff" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round"/>
+            `
           : nothing
       }
     `;
@@ -136,7 +141,7 @@ class MyenergiFlowCard extends LitElement {
         </div>
       </foreignObject>
       <text x="${CENTRE_X}" y="${CENTRE_Y + 15}" text-anchor="middle"
-        font-size="15" font-weight="700" fill="${COLORS.leafGreen}">${selfPct === null ? "–" : `${selfPct}%`}</text>
+        font-size="17.25" font-weight="100" fill="${COLORS.leafGreen}">${selfPct === null ? "–" : `${selfPct}%`}</text>
     `;
   }
 
@@ -152,7 +157,7 @@ class MyenergiFlowCard extends LitElement {
       <ha-card>
         ${this._config.title ? html`<div class="card-header">${this._config.title}</div>` : nothing}
         <svg class="card-svg" viewBox="0 0 ${SVG_W} ${SVG_H}" xmlns="http://www.w3.org/2000/svg"
-          font-family="inherit" role="img" aria-label="Energy flow">
+          font-family="Overpass, sans-serif" font-weight="100" role="img" aria-label="Energy flow">
           ${renderSpokes(cs.spokes, positions, anim)}
           ${cs.nodes.map((n) => this._renderNode(n, positions.find((p) => p.id === n.id)!))}
           ${this._renderHub(cs.selfConsumptionPct)}

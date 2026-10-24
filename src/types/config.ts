@@ -43,6 +43,8 @@ export interface CardConfig {
   zappi?: NodeConfig & {
     /** e.g. select.zappi_charge_mode — shown under the label */
     mode_entity?: string;
+    /** e.g. sensor.zappi_status — used to show a check when fully charged */
+    status_entity?: string;
   };
 
   eddi?: NodeConfig & {

@@ -24,6 +24,7 @@ zappi:
   name: Car
   power_entity: sensor.zappi_power
   mode_entity: select.zappi_charge_mode
+  status_entity: sensor.zappi_status      # optional; check shown when fully charged
 battery:
   name: Batteries
   power_entity: sensor.battery_power    # + discharging / - charging (invert: true to flip)
@@ -38,4 +39,4 @@ display:
   idle_threshold_w: 30
 ```
 
-Any node you leave out isn't drawn. Power entities in kW are converted automatically. Icons are any `mdi:` icon.
+Any node you leave out isn't drawn. Power entities in kW are converted automatically. Icons are any `mdi:` icon. A check appears next to eddi when its status is "Max temp reached", and next to zappi when its optional `status_entity` reports "Fully charged", "Charge complete", or "Charged".

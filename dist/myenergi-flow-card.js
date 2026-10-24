@@ -65,7 +65,49 @@ const t=globalThis,i$1=t=>t,s$2=t.trustedTypes,e=s$2?s$2.createPolicy("lit-html"
  * SPDX-License-Identifier: BSD-3-Clause
  */function r(r){return n({...r,state:true,attribute:false})}
 
+const COLORS = {
+    card: "#303030",
+    stroke: "#3a3a3a",
+    grid: "#FF4400",
+    solar: "#55FF00",
+    zappi: "#0086FF",
+    eddi: "#00E6C0",
+    home: "#F91CDF",
+    battery: "#FF9234",
+    leafGreen: "#84ff00",
+    muted: "#cecdcd",
+    dim: "#6b6b6b",
+    spokeTrack: "rgba(255,255,255,0.12)",
+};
+const HUB_R = 40;
+const NODE_R = 34;
+const NODE_ICON_SIZE = NODE_R * 2 * 0.65;
+const ORBIT_R = 140;
+/** Card SVG viewBox dimensions */
+const SVG_W = 380;
+const SVG_H = 440;
+const CENTRE_X = SVG_W / 2;
+const CENTRE_Y = 218;
+/** Clockwise node order from 12 o'clock. */
+const SLOT_ORDER = ["home", "solar", "battery", "eddi", "zappi", "grid"];
+
 const cardStyles = i$3 `
+  @font-face {
+    font-family: "Overpass";
+    font-style: normal;
+    font-weight: 100;
+    font-display: swap;
+    src: url("https://fonts.gstatic.com/s/overpass/v19/qFda35WCmI96Ajtm83upeyoaX6QPnlo6_PLrOQ.ttf") format("truetype");
+  }
+
+  @font-face {
+    font-family: "Overpass";
+    font-style: normal;
+    font-weight: 400;
+    font-display: swap;
+    src: url("https://fonts.gstatic.com/s/overpass/v19/qFda35WCmI96Ajtm83upeyoaX6QPnlo6_PPrOQ.ttf") format("truetype");
+  }
+
   :host {
     display: block;
   }
@@ -74,13 +116,14 @@ const cardStyles = i$3 `
     background: var(--myenergi-flow-bg, #1a1a1a);
     padding: 12px 8px 8px;
     color: #ffffff;
-    font-family: var(--ha-font-family-body, var(--paper-font-body1_-_font-family, Roboto, sans-serif));
+    font-family: "Overpass", sans-serif;
+    font-weight: 100;
     user-select: none;
   }
 
   .card-header {
-    font-size: 16px;
-    font-weight: 600;
+    font-size: 18.4px;
+    font-weight: 100;
     padding: 0 8px 4px;
     color: var(--primary-text-color, #fff);
   }
@@ -95,12 +138,12 @@ const cardStyles = i$3 `
   }
 
   .node-icon {
-    --mdc-icon-size: 22px;
+    --mdc-icon-size: ${NODE_ICON_SIZE}px;
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 24px;
-    height: 24px;
+    width: ${NODE_ICON_SIZE}px;
+    height: ${NODE_ICON_SIZE}px;
     color: #ffffff;
   }
 
@@ -117,32 +160,6 @@ const cardStyles = i$3 `
     line { animation: none !important; }
   }
 `;
-
-const COLORS = {
-    card: "#303030",
-    stroke: "#3a3a3a",
-    grid: "#FF4400",
-    solar: "#55FF00",
-    zappi: "#0086FF",
-    eddi: "#00E6C0",
-    home: "#F91CDF",
-    battery: "#FF9234",
-    leafGreen: "#84ff00",
-    text: "#ffffff",
-    muted: "#cecdcd",
-    dim: "#6b6b6b",
-    spokeTrack: "rgba(255,255,255,0.12)",
-};
-const HUB_R = 40;
-const NODE_R = 34;
-const ORBIT_R = 140;
-/** Card SVG viewBox dimensions */
-const SVG_W = 380;
-const SVG_H = 440;
-const CENTRE_X = SVG_W / 2;
-const CENTRE_Y = 218;
-/** Clockwise node order from 12 o'clock. */
-const SLOT_ORDER = ["home", "solar", "battery", "eddi", "zappi", "grid"];
 
 /**
  * Places nodes evenly on a circle, first at 12 o'clock, clockwise.
@@ -229,11 +246,15 @@ function renderSpokes(spokes, positions, animSpeed = "auto") {
     });
 }
 
-const icon = (paths) => w `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"
-    stroke-linecap="round" stroke-linejoin="round" width="22" height="22">${paths}</svg>`;
-const homeIcon = () => icon(w `
-    <path d="M3 9.5L12 3l9 6.5V21a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9.5z"/>
-    <path d="M9 22V12h6v10"/>
+const icon = (paths) => w `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="0.75"
+    stroke-linecap="round" stroke-linejoin="round" width="${NODE_ICON_SIZE}" height="${NODE_ICON_SIZE}">${paths}</svg>`;
+const homeIcon = (mood = "neutral") => icon(w `
+    <path d="M3 9.5 12 3l9 6.5V21a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9.5z"/>
+    ${mood === "smile"
+    ? w `<circle cx="9" cy="11" r=".55" fill="currentColor"/><circle cx="15" cy="11" r=".55" fill="currentColor"/><path d="M9 15q3 3 6 0"/>`
+    : mood === "frown"
+        ? w `<circle cx="9" cy="11" r=".55" fill="currentColor"/><circle cx="15" cy="11" r=".55" fill="currentColor"/><path d="M9 16q3-3 6 0"/>`
+        : w `<path d="M9 11v.1m6-.1v.1M9 15h6"/>`}
   `);
 const gridIcon = () => icon(w `
     <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>
@@ -241,25 +262,36 @@ const gridIcon = () => icon(w `
   `);
 const solarIcon = () => icon(w `
     <circle cx="12" cy="12" r="4"/>
-    <path d="M12 2v2M12 20v2M4.93 4.93l1.42 1.42m11.3 11.3 1.42 1.42M2 12h2m16 0h2M4.93 19.07l1.42-1.42m11.3-11.3 1.42-1.42"/>
+    <path d="M12 2v2m0 16v2M4.93 4.93l1.42 1.42m11.3 11.3 1.42 1.42M2 12h2m16 0h2M4.93 19.07l1.42-1.42m11.3-11.3 1.42-1.42"/>
   `);
-const libbiIcon = () => icon(w `
-    <rect x="6" y="4" width="12" height="18" rx="2"/>
-    <path d="M10 2h4M9 9h6M9 13h6M9 17h4"/>
+const libbiIcon = (socPct = null) => {
+    const filledBars = socPct === null ? 0 : Math.floor(Math.max(0, Math.min(100, socPct)) / 10);
+    return icon(w `
+    <g transform="rotate(90 12 12)">
+      <rect x="6" y="4" width="12" height="18" rx="2"/>
+      <path d="M10 2h4"/>
+      ${Array.from({ length: 10 }, (_, i) => w `<path d="M8 ${6.5 + (9 - i) * 1.45}h8"
+          stroke-width="0.4"
+          opacity="${i < filledBars ? 1 : 0.25}"/>`)}
+    </g>
   `);
+};
 const zappiIcon = () => icon(w `
-    <path d="m4 14 1.5-5a2 2 0 0 1 1.9-1.4h8.2a2 2 0 0 1 1.9 1.4L19 14h1a1 1 0 0 1 1 1v3h-3m-12 0H3v-3a1 1 0 0 1 1-1h15"/>
-    <path d="M7 18h10"/>
+    <path d="M2 12V8a4 4 0 0 1 4-4h5"/>
+    <path d="M11 2h3a2 2 0 0 1 2 2v3h-5zM16 3h3m-3 3h3"/>
+    <path d="M3 17v-4l2-5a2 2 0 0 1 2-1h7l4 5 3 1v4H3z"/>
     <circle cx="7" cy="17" r="1.5"/>
     <circle cx="17" cy="17" r="1.5"/>
   `);
 const eddiIcon = () => icon(w `
-    <path d="M4 3v5h7a5 5 0 0 1 5 5"/>
-    <path d="M14 13a5 5 0 0 1 7-4l-3 5a5 5 0 0 1-4-1z"/>
-    <path d="m15 16-.5 1m3-.5-.5 1m3-.5-.5 1"/>
+    <path d="M21 22V6a4 4 0 0 0-4-4h-5a4 4 0 0 0-4 4v3"/>
+    <path d="M3 11q1-3 4-3h5q3 0 4 3l1 2H2z"/>
+    <path d="M4 16v2m4-2v2m4-2v2m4-2v2"/>
   `);
-const leafIcon = () => w `<svg viewBox="0 0 24 24" width="20" height="20" fill="#84ff00">
-    <path d="M17 8C8 10 5.9 16.17 3.82 21.34L5.71 22l1-2.3A4.49 4.49 0 0 0 8 20C19 20 22 3 22 3c-1 2-8 3-11 4l-1-3.5C12 2 17 2 17 8z"/>
+const leafIcon = () => w `<svg viewBox="0 0 24 24" width="20" height="20">
+    <path fill="#84ff00" d="M2 1c8 0 15 3 18 9 3 6-1 12-7 13C7 24 2 18 2 11 2 7 2 3 2 1z"/>
+    <path d="M4 3 20 21M8 8l-4 1m8 3-5 1m9-1 2-4m-5 9 3-1"
+      fill="none" stroke="#1a1a1a" stroke-width="0.65" stroke-linecap="round"/>
   </svg>`;
 const M2_DEFAULT_ICONS = {
     home: "mdi:home",
@@ -269,16 +301,16 @@ const M2_DEFAULT_ICONS = {
     zappi: "mdi:ev-station",
     eddi: "mdi:water-boiler",
 };
-const m2NodeIcon = (id) => {
+const m2NodeIcon = (id, socPct = null, houseMood = "neutral") => {
     switch (id) {
         case "home":
-            return homeIcon();
+            return homeIcon(houseMood);
         case "grid":
             return gridIcon();
         case "solar":
             return solarIcon();
         case "battery":
-            return libbiIcon();
+            return libbiIcon(socPct);
         case "zappi":
             return zappiIcon();
         case "eddi":
@@ -317,6 +349,9 @@ function readText(hass, entityId) {
         return undefined;
     return s;
 }
+function hasStatus(status, pattern) {
+    return !!status && pattern.test(status);
+}
 function buildState(hass, cfg) {
     const thr = cfg.display?.idle_threshold_w ?? 30;
     const pos = (w) => Math.max(0, w ?? 0);
@@ -336,6 +371,7 @@ function buildState(hass, cfg) {
     const eddiW = pos(readPowerW(hass, cfg.eddi?.power_entity));
     // ---- what's feeding the hub, and who's winning ------------------------
     const inbound = solarW + gridImportW + battDischargeW;
+    const generationW = solarW + battDischargeW;
     let mixColour = COLORS.solar;
     if (inbound > thr) {
         if (solarW >= inbound / 2)
@@ -380,21 +416,37 @@ function buildState(hass, cfg) {
             icon: cfg.home.icon ?? "mdi:home",
             color: COLORS.home,
             powerW: homeW,
+            houseMood: soc !== null && soc < 40
+                ? "frown"
+                : generationW > 0 && generationW >= homeW
+                    ? "smile"
+                    : "neutral",
             active: homeW > thr,
         }, { node: "home", powerW: homeW, direction: idleOut(homeW), chevronColor: mixColour });
     }
     if (cfg.eddi?.power_entity) {
+        const eddiStatus = readText(hass, cfg.eddi.status_entity);
+        const eddiAtMaxTemp = hasStatus(eddiStatus, /\bmax(?:imum)?\s+temp(?:erature)?\s+reached\b/i);
+        const eddiDiverting = !eddiStatus || /\bdivert(?:ing)?\b/i.test(eddiStatus);
+        const eddiActive = eddiW > thr && eddiDiverting && !eddiAtMaxTemp;
         add({
             id: "eddi",
             label: cfg.eddi.name ?? "eddi",
             icon: cfg.eddi.icon ?? "mdi:water-boiler",
             color: COLORS.eddi,
             powerW: eddiW,
-            subLabel: readText(hass, cfg.eddi.status_entity),
-            active: eddiW > thr,
-        }, { node: "eddi", powerW: eddiW, direction: idleOut(eddiW), chevronColor: mixColour });
+            subLabel: eddiStatus,
+            active: eddiActive,
+            complete: eddiAtMaxTemp,
+        }, {
+            node: "eddi",
+            powerW: eddiW,
+            direction: eddiActive ? idleOut(eddiW) : "idle",
+            chevronColor: mixColour,
+        });
     }
     if (cfg.zappi?.power_entity) {
+        const zappiStatus = readText(hass, cfg.zappi.status_entity);
         add({
             id: "zappi",
             label: cfg.zappi.name ?? "zappi",
@@ -403,6 +455,7 @@ function buildState(hass, cfg) {
             powerW: zappiW,
             subLabel: readText(hass, cfg.zappi.mode_entity),
             active: zappiW > thr,
+            complete: hasStatus(zappiStatus, /^(?:fully\s+charged|charge\s+complete(?:d)?|charged)$/i),
         }, { node: "zappi", powerW: zappiW, direction: idleOut(zappiW), chevronColor: mixColour });
     }
     if (cfg.battery?.power_entity) {
@@ -416,6 +469,7 @@ function buildState(hass, cfg) {
             color: COLORS.battery,
             powerW: charging ? battChargeW : battDischargeW,
             subLabel: sub,
+            socPct: soc === null ? null : Math.max(0, Math.min(100, soc)),
             active: battChargeW > thr || battDischargeW > thr,
         }, {
             node: "battery",
@@ -524,7 +578,7 @@ class MyenergiFlowCard extends i {
             c.home?.power_entity,
             c.battery?.power_entity, c.battery?.soc_entity,
             c.grid?.power_entity,
-            c.zappi?.power_entity, c.zappi?.mode_entity,
+            c.zappi?.power_entity, c.zappi?.mode_entity, c.zappi?.status_entity,
             c.eddi?.power_entity, c.eddi?.status_entity,
         ].filter((x) => !!x);
     }
@@ -534,41 +588,47 @@ class MyenergiFlowCard extends i {
         const stroke = node.active ? node.color : COLORS.dim;
         const valueColour = node.active ? node.color : COLORS.muted;
         const useM2Icon = node.icon === M2_DEFAULT_ICONS[node.id];
-        // Label above the top node, below everything else
-        const above = pos.angleDeg === 0;
-        const labelY = above ? pos.cy - NODE_R - 24 : pos.cy + NODE_R + 16;
-        const subY = labelY + 14;
+        const powerY = node.id === "home"
+            ? pos.cy - NODE_R - 12
+            : pos.cy + NODE_R + 18;
+        const iconYOffset = node.id === "home" ? -3 : 0;
         return w `
       <circle cx="${pos.cx}" cy="${pos.cy}" r="${NODE_R}"
         fill="url(#node-grad-${node.id})" stroke="${stroke}" stroke-width="2.5"/>
       <defs>
-        <radialGradient id="node-grad-${node.id}" cx="50%" cy="35%" r="70%">
+        <radialGradient id="node-grad-${node.id}" cx="50%" cy="65%" r="70%">
           <stop offset="0%" stop-color="${stroke}" stop-opacity="0.3"/>
           <stop offset="100%" stop-color="${COLORS.card}" stop-opacity="0.96"/>
         </radialGradient>
       </defs>
       ${useM2Icon
             ? w `
-              <foreignObject x="${pos.cx - 12}" y="${pos.cy - 22}" width="24" height="24">
+              <foreignObject x="${pos.cx - NODE_ICON_SIZE / 2}" y="${pos.cy - NODE_ICON_SIZE / 2 + iconYOffset}"
+                width="${NODE_ICON_SIZE}" height="${NODE_ICON_SIZE}">
                 <div xmlns="http://www.w3.org/1999/xhtml" class="node-icon">
-                  ${m2NodeIcon(node.id)}
+                  ${m2NodeIcon(node.id, node.socPct ?? null, node.houseMood ?? "neutral")}
                 </div>
               </foreignObject>
             `
             : w `
-              <foreignObject x="${pos.cx - 12}" y="${pos.cy - 22}" width="24" height="24">
+              <foreignObject x="${pos.cx - NODE_ICON_SIZE / 2}" y="${pos.cy - NODE_ICON_SIZE / 2 + iconYOffset}"
+                width="${NODE_ICON_SIZE}" height="${NODE_ICON_SIZE}">
                 <div xmlns="http://www.w3.org/1999/xhtml" class="node-icon ${node.active ? "" : "idle"}">
                   <ha-icon icon="${node.icon}"></ha-icon>
                 </div>
               </foreignObject>
             `}
-      <text x="${pos.cx}" y="${pos.cy + 17}" text-anchor="middle"
-        font-size="13" font-weight="700" fill="${valueColour}">${formatPower(node.powerW)}</text>
-      <text x="${pos.cx}" y="${labelY}" text-anchor="middle"
-        font-size="12" font-weight="700" fill="${COLORS.text}">${node.label}</text>
-      ${node.subLabel
-            ? w `<text x="${pos.cx}" y="${subY}" text-anchor="middle"
-              font-size="11" fill="${COLORS.muted}">${node.subLabel}</text>`
+      <text x="${pos.cx}" y="${powerY}" text-anchor="middle"
+        font-size="14.95" font-weight="400" fill="${valueColour}">${formatPower(node.powerW)}</text>
+      ${node.complete
+            ? w `
+              <circle cx="${pos.cx + NODE_R * 0.72}" cy="${pos.cy - NODE_R * 0.72}" r="10"
+                fill="${COLORS.card}" stroke="${node.color}" stroke-width="2"/>
+              <path d="M ${pos.cx + NODE_R * 0.72 - 4} ${pos.cy - NODE_R * 0.72}
+                l 3 3 5 -6"
+                fill="none" stroke="#ffffff" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round"/>
+            `
             : A}
     `;
     }
@@ -589,7 +649,7 @@ class MyenergiFlowCard extends i {
         </div>
       </foreignObject>
       <text x="${CENTRE_X}" y="${CENTRE_Y + 15}" text-anchor="middle"
-        font-size="15" font-weight="700" fill="${COLORS.leafGreen}">${selfPct === null ? "–" : `${selfPct}%`}</text>
+        font-size="17.25" font-weight="100" fill="${COLORS.leafGreen}">${selfPct === null ? "–" : `${selfPct}%`}</text>
     `;
     }
     render() {
@@ -603,7 +663,7 @@ class MyenergiFlowCard extends i {
       <ha-card>
         ${this._config.title ? b `<div class="card-header">${this._config.title}</div>` : A}
         <svg class="card-svg" viewBox="0 0 ${SVG_W} ${SVG_H}" xmlns="http://www.w3.org/2000/svg"
-          font-family="inherit" role="img" aria-label="Energy flow">
+          font-family="Overpass, sans-serif" font-weight="100" role="img" aria-label="Energy flow">
           ${renderSpokes(cs.spokes, positions, anim)}
           ${cs.nodes.map((n) => this._renderNode(n, positions.find((p) => p.id === n.id)))}
           ${this._renderHub(cs.selfConsumptionPct)}

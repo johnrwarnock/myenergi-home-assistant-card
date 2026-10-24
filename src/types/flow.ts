@@ -7,7 +7,10 @@ export interface NodeDef {
   color: string;
   powerW: number;
   subLabel?: string;
+  socPct?: number | null;
+  houseMood?: "smile" | "neutral" | "frown";
   active: boolean;
+  complete?: boolean;
   hidden?: boolean;
 }
 
