@@ -454,7 +454,7 @@ function buildState(hass, cfg) {
             powerW: zappiW,
             subLabel: readText(hass, cfg.zappi.mode_entity),
             active: zappiW > thr,
-            complete: hasStatus(zappiStatus, /^(?:fully\s+charged|charge\s+complete(?:d)?|charged)$/i),
+            complete: hasStatus(zappiStatus, /^(?:fully\s+charged|charge\s+complete(?:d)?|completed|charged)$/i),
         }, { node: "zappi", powerW: zappiW, direction: idleOut(zappiW), chevronColor: mixColour });
     }
     if (cfg.battery?.power_entity) {

@@ -164,7 +164,7 @@ export function buildState(hass: HassLike, cfg: CardConfig): CardState {
         active: zappiW > thr,
         complete: hasStatus(
           zappiStatus,
-          /^(?:fully\s+charged|charge\s+complete(?:d)?|charged)$/i
+          /^(?:fully\s+charged|charge\s+complete(?:d)?|completed|charged)$/i
         ),
       },
       { node: "zappi", powerW: zappiW, direction: idleOut(zappiW), chevronColor: mixColour }
