@@ -7,7 +7,7 @@ import { renderSpokes } from "./layout/flow-renderer.js";
 import {
   COLORS, HUB_R, NODE_R, SVG_W, SVG_H, CENTRE_X, CENTRE_Y, SLOT_ORDER,
 } from "./layout/theme.js";
-import { leafIcon } from "./icons/icons.js";
+import { leafIcon, M2_DEFAULT_ICONS, m2NodeIcon } from "./icons/icons.js";
 import { buildState } from "./state/build-state.js";
 import type { HassLike } from "./state/build-state.js";
 import { DUMMY_CONFIG, DUMMY_HASS } from "./state/dummy-state.js";
@@ -74,6 +74,7 @@ class MyenergiFlowCard extends LitElement {
     if (node.hidden) return nothing;
     const stroke = node.active ? node.color : COLORS.dim;
     const valueColour = node.active ? node.color : COLORS.muted;
+    const useM2Icon = node.icon === M2_DEFAULT_ICONS[node.id];
 
     // Label above the top node, below everything else
     const above = pos.angleDeg === 0;
@@ -83,11 +84,23 @@ class MyenergiFlowCard extends LitElement {
     return svg`
       <circle cx="${pos.cx}" cy="${pos.cy}" r="${NODE_R}"
         fill="${COLORS.card}" stroke="${stroke}" stroke-width="2.5"/>
-      <foreignObject x="${pos.cx - 12}" y="${pos.cy - 22}" width="24" height="24">
-        <div xmlns="http://www.w3.org/1999/xhtml" class="node-icon ${node.active ? "" : "idle"}">
-          <ha-icon icon="${node.icon}"></ha-icon>
-        </div>
-      </foreignObject>
+      ${
+        useM2Icon
+          ? svg`
+              <foreignObject x="${pos.cx - 12}" y="${pos.cy - 22}" width="24" height="24">
+                <div xmlns="http://www.w3.org/1999/xhtml" class="node-icon">
+                  ${m2NodeIcon(node.id)}
+                </div>
+              </foreignObject>
+            `
+          : svg`
+              <foreignObject x="${pos.cx - 12}" y="${pos.cy - 22}" width="24" height="24">
+                <div xmlns="http://www.w3.org/1999/xhtml" class="node-icon ${node.active ? "" : "idle"}">
+                  <ha-icon icon="${node.icon}"></ha-icon>
+                </div>
+              </foreignObject>
+            `
+      }
       <text x="${pos.cx}" y="${pos.cy + 17}" text-anchor="middle"
         font-size="13" font-weight="700" fill="${valueColour}">${formatPower(node.powerW)}</text>
       <text x="${pos.cx}" y="${labelY}" text-anchor="middle"

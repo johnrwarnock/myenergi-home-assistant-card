@@ -24,5 +24,5 @@ export const SVG_H = 440;
 export const CENTRE_X = SVG_W / 2;
 export const CENTRE_Y = 218;
 
-/** Fixed clockwise slot order from 12 o'clock — sources left/top, loads right. */
-export const SLOT_ORDER = ["solar", "home", "eddi", "zappi", "battery", "grid"] as const;
+/** Clockwise node order from 12 o'clock. */
+export const SLOT_ORDER = ["home", "solar", "battery", "eddi", "zappi", "grid"] as const;

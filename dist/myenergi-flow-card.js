@@ -141,8 +141,8 @@ const SVG_W = 380;
 const SVG_H = 440;
 const CENTRE_X = SVG_W / 2;
 const CENTRE_Y = 218;
-/** Fixed clockwise slot order from 12 o'clock — sources left/top, loads right. */
-const SLOT_ORDER = ["solar", "home", "eddi", "zappi", "battery", "grid"];
+/** Clockwise node order from 12 o'clock. */
+const SLOT_ORDER = ["home", "solar", "battery", "eddi", "zappi", "grid"];
 
 /**
  * Places nodes evenly on a circle, first at 12 o'clock, clockwise.
@@ -195,24 +195,94 @@ function renderSpokes(spokes, positions, animSpeed = "auto") {
         // Draw the animated line in the direction of flow
         const [x1, y1, x2, y2] = spoke.direction === "in" ? [nx, ny, hx, hy] : [hx, hy, nx, ny];
         const dur = chevDuration(spoke.powerW, animSpeed);
-        const isIdle = spoke.direction === "idle" || dur === 0;
+        const isActive = spoke.direction !== "idle" && dur > 0;
         return w `
       <line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}"
         stroke="${COLORS.spokeTrack}" stroke-width="3" stroke-linecap="round"/>
-      ${!isIdle
-            ? w `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}"
-              stroke="${spoke.chevronColor}" stroke-width="3" stroke-linecap="round"
-              stroke-dasharray="6 30"
-              style="animation: chev ${dur}s linear infinite;"/>`
+      ${isActive
+            ? w `
+              <line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}"
+                stroke="${spoke.chevronColor}" stroke-width="4" stroke-linecap="round" opacity="0.45"/>
+              ${[0, 1, 2].map((index) => w `
+                  <g>
+                    <animateMotion
+                      dur="${dur}s"
+                      begin="${(-dur * index) / 3}s"
+                      repeatCount="indefinite"
+                      rotate="auto"
+                      path="M ${x1} ${y1} L ${x2} ${y2}"/>
+                    <path d="M -5 -5 L 0 0 L -5 5"
+                      fill="none"
+                      stroke="${spoke.chevronColor}"
+                      stroke-width="2.5"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"/>
+                  </g>
+                `)}
+            `
             : ""}
     `;
     });
 }
 
-/** Hub leaf. Node icons use HA's own <ha-icon> so any mdi: icon works. */
+const icon = (paths) => w `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"
+    stroke-linecap="round" stroke-linejoin="round" width="22" height="22">${paths}</svg>`;
+const homeIcon = () => icon(w `
+    <path d="M3 9.5L12 3l9 6.5V21a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9.5z"/>
+    <path d="M9 22V12h6v10"/>
+  `);
+const gridIcon = () => icon(w `
+    <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>
+    <circle cx="12" cy="12" r="3"/>
+  `);
+const solarIcon = () => icon(w `
+    <rect x="2" y="6" width="9" height="6" rx="1"/>
+    <rect x="13" y="6" width="9" height="6" rx="1"/>
+    <rect x="2" y="14" width="9" height="6" rx="1"/>
+    <rect x="13" y="14" width="9" height="6" rx="1"/>
+    <path d="M12 3v2M12 19v2M3 12H1M23 12h-2"/>
+  `);
+const libbiIcon = () => icon(w `
+    <rect x="6" y="4" width="12" height="18" rx="2"/>
+    <path d="M10 2h4M9 9h6M9 13h6M9 17h4"/>
+  `);
+const zappiIcon = () => icon(w `
+    <path d="M5 17H3a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2h11l5 5v5a2 2 0 0 1-2 2h-2"/>
+    <circle cx="7" cy="17" r="2"/>
+    <circle cx="17" cy="17" r="2"/>
+    <path d="M13 6v4l3 2"/>
+  `);
+const eddiIcon = () => icon(w `
+    <path d="M12 2a5 5 0 0 1 5 5v6a5 5 0 0 1-10 0V7a5 5 0 0 1 5-5z"/>
+    <path d="M12 13v4M8 22h8M10 22v-2h4v2"/>
+  `);
 const leafIcon = () => w `<svg viewBox="0 0 24 24" width="20" height="20" fill="#84ff00">
     <path d="M17 8C8 10 5.9 16.17 3.82 21.34L5.71 22l1-2.3A4.49 4.49 0 0 0 8 20C19 20 22 3 22 3c-1 2-8 3-11 4l-1-3.5C12 2 17 2 17 8z"/>
   </svg>`;
+const M2_DEFAULT_ICONS = {
+    home: "mdi:home",
+    grid: "mdi:transmission-tower",
+    solar: "mdi:solar-panel",
+    battery: "mdi:home-battery",
+    zappi: "mdi:ev-station",
+    eddi: "mdi:water-boiler",
+};
+const m2NodeIcon = (id) => {
+    switch (id) {
+        case "home":
+            return homeIcon();
+        case "grid":
+            return gridIcon();
+        case "solar":
+            return solarIcon();
+        case "battery":
+            return libbiIcon();
+        case "zappi":
+            return zappiIcon();
+        case "eddi":
+            return eddiIcon();
+    }
+};
 
 /** Read a power entity in W, converting kW/MW. Returns null if missing/unavailable. */
 function readPowerW(hass, entityId) {
@@ -463,6 +533,7 @@ class MyenergiFlowCard extends i {
             return A;
         const stroke = node.active ? node.color : COLORS.dim;
         const valueColour = node.active ? node.color : COLORS.muted;
+        const useM2Icon = node.icon === M2_DEFAULT_ICONS[node.id];
         // Label above the top node, below everything else
         const above = pos.angleDeg === 0;
         const labelY = above ? pos.cy - NODE_R - 24 : pos.cy + NODE_R + 16;
@@ -470,11 +541,21 @@ class MyenergiFlowCard extends i {
         return w `
       <circle cx="${pos.cx}" cy="${pos.cy}" r="${NODE_R}"
         fill="${COLORS.card}" stroke="${stroke}" stroke-width="2.5"/>
-      <foreignObject x="${pos.cx - 12}" y="${pos.cy - 22}" width="24" height="24">
-        <div xmlns="http://www.w3.org/1999/xhtml" class="node-icon ${node.active ? "" : "idle"}">
-          <ha-icon icon="${node.icon}"></ha-icon>
-        </div>
-      </foreignObject>
+      ${useM2Icon
+            ? w `
+              <foreignObject x="${pos.cx - 12}" y="${pos.cy - 22}" width="24" height="24">
+                <div xmlns="http://www.w3.org/1999/xhtml" class="node-icon">
+                  ${m2NodeIcon(node.id)}
+                </div>
+              </foreignObject>
+            `
+            : w `
+              <foreignObject x="${pos.cx - 12}" y="${pos.cy - 22}" width="24" height="24">
+                <div xmlns="http://www.w3.org/1999/xhtml" class="node-icon ${node.active ? "" : "idle"}">
+                  <ha-icon icon="${node.icon}"></ha-icon>
+                </div>
+              </foreignObject>
+            `}
       <text x="${pos.cx}" y="${pos.cy + 17}" text-anchor="middle"
         font-size="13" font-weight="700" fill="${valueColour}">${formatPower(node.powerW)}</text>
       <text x="${pos.cx}" y="${labelY}" text-anchor="middle"

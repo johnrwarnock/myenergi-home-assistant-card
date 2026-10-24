@@ -41,17 +41,35 @@ export function renderSpokes(
       spoke.direction === "in" ? [nx, ny, hx, hy] : [hx, hy, nx, ny];
 
     const dur = chevDuration(spoke.powerW, animSpeed);
-    const isIdle = spoke.direction === "idle" || dur === 0;
+    const isActive = spoke.direction !== "idle" && dur > 0;
 
     return svg`
       <line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}"
         stroke="${COLORS.spokeTrack}" stroke-width="3" stroke-linecap="round"/>
       ${
-        !isIdle
-          ? svg`<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}"
-              stroke="${spoke.chevronColor}" stroke-width="3" stroke-linecap="round"
-              stroke-dasharray="6 30"
-              style="animation: chev ${dur}s linear infinite;"/>`
+        isActive
+          ? svg`
+              <line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}"
+                stroke="${spoke.chevronColor}" stroke-width="4" stroke-linecap="round" opacity="0.45"/>
+              ${[0, 1, 2].map(
+                (index) => svg`
+                  <g>
+                    <animateMotion
+                      dur="${dur}s"
+                      begin="${(-dur * index) / 3}s"
+                      repeatCount="indefinite"
+                      rotate="auto"
+                      path="M ${x1} ${y1} L ${x2} ${y2}"/>
+                    <path d="M -5 -5 L 0 0 L -5 5"
+                      fill="none"
+                      stroke="${spoke.chevronColor}"
+                      stroke-width="2.5"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"/>
+                  </g>
+                `
+              )}
+            `
           : ""
       }
     `;
