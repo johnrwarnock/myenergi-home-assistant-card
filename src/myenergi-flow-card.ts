@@ -107,8 +107,12 @@ class MyenergiFlowCard extends LitElement {
               </foreignObject>
             `
       }
-      <text x="${pos.cx}" y="${powerY}" text-anchor="middle"
-        font-size="14.95" font-weight="400" fill="${valueColour}">${formatPower(node.powerW)}</text>
+      ${
+        node.id === "home" || node.active
+          ? svg`<text x="${pos.cx}" y="${powerY}" text-anchor="middle"
+              font-size="14.95" font-weight="400" fill="${valueColour}">${formatPower(node.powerW)}</text>`
+          : nothing
+      }
       ${
         node.complete
           ? svg`

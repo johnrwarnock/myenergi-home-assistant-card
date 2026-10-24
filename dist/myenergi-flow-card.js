@@ -617,8 +617,10 @@ class MyenergiFlowCard extends i {
                 </div>
               </foreignObject>
             `}
-      <text x="${pos.cx}" y="${powerY}" text-anchor="middle"
-        font-size="14.95" font-weight="400" fill="${valueColour}">${formatPower(node.powerW)}</text>
+      ${node.id === "home" || node.active
+            ? w `<text x="${pos.cx}" y="${powerY}" text-anchor="middle"
+              font-size="14.95" font-weight="400" fill="${valueColour}">${formatPower(node.powerW)}</text>`
+            : A}
       ${node.complete
             ? w `
               <circle cx="${pos.cx + NODE_R * 0.72}" cy="${pos.cy - NODE_R * 0.72}" r="10"
