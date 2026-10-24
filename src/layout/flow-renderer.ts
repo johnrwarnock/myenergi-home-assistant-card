@@ -10,7 +10,11 @@ function chevDuration(powerW: number, speed: string): number {
   if (speed === "slow") return 3;
   const abs = Math.abs(powerW);
   if (abs <= 0) return 0;
-  return Math.max(0.6, Math.min(3, 3000 / abs));
+  return Math.max(0.6, Math.min(3, 7500 / abs));
+}
+
+function spokeWidth(powerW: number): number {
+  return Math.min(8, 2 + Math.sqrt(Math.max(0, powerW) / 1000) * 2);
 }
 
 export function renderSpokes(
@@ -42,15 +46,16 @@ export function renderSpokes(
 
     const dur = chevDuration(spoke.powerW, animSpeed);
     const isActive = spoke.direction !== "idle" && dur > 0;
+    const width = spokeWidth(spoke.powerW);
 
     return svg`
       <line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}"
-        stroke="${COLORS.spokeTrack}" stroke-width="3" stroke-linecap="round"/>
+        stroke="${COLORS.spokeTrack}" stroke-width="2" stroke-linecap="round"/>
       ${
         isActive
           ? svg`
               <line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}"
-                stroke="${spoke.chevronColor}" stroke-width="4" stroke-linecap="round" opacity="0.45"/>
+                stroke="${spoke.chevronColor}" stroke-width="${width}" stroke-linecap="round" opacity="0.45"/>
               ${[0, 1, 2].map(
                 (index) => svg`
                   <g>
@@ -63,7 +68,7 @@ export function renderSpokes(
                     <path d="M -5 -5 L 0 0 L -5 5"
                       fill="none"
                       stroke="${spoke.chevronColor}"
-                      stroke-width="2.5"
+                      stroke-width="${Math.max(1.5, width * 0.42)}"
                       stroke-linecap="round"
                       stroke-linejoin="round"/>
                   </g>

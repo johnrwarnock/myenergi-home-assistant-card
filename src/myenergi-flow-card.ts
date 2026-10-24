@@ -22,8 +22,7 @@ declare global {
 
 function formatPower(w: number): string {
   const abs = Math.abs(w);
-  if (abs >= 1000) return `${(abs / 1000).toFixed(1)} kW`;
-  return `${Math.round(abs)} W`;
+  return `${(abs / 1000).toFixed(1)} kW`;
 }
 
 class MyenergiFlowCard extends LitElement {
@@ -83,7 +82,13 @@ class MyenergiFlowCard extends LitElement {
 
     return svg`
       <circle cx="${pos.cx}" cy="${pos.cy}" r="${NODE_R}"
-        fill="${COLORS.card}" stroke="${stroke}" stroke-width="2.5"/>
+        fill="url(#node-grad-${node.id})" stroke="${stroke}" stroke-width="2.5"/>
+      <defs>
+        <radialGradient id="node-grad-${node.id}" cx="50%" cy="35%" r="70%">
+          <stop offset="0%" stop-color="${stroke}" stop-opacity="0.3"/>
+          <stop offset="100%" stop-color="${COLORS.card}" stop-opacity="0.96"/>
+        </radialGradient>
+      </defs>
       ${
         useM2Icon
           ? svg`

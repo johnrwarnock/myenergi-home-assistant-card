@@ -19,11 +19,8 @@ export const gridIcon = () =>
 
 export const solarIcon = () =>
   icon(svg`
-    <rect x="2" y="6" width="9" height="6" rx="1"/>
-    <rect x="13" y="6" width="9" height="6" rx="1"/>
-    <rect x="2" y="14" width="9" height="6" rx="1"/>
-    <rect x="13" y="14" width="9" height="6" rx="1"/>
-    <path d="M12 3v2M12 19v2M3 12H1M23 12h-2"/>
+    <circle cx="12" cy="12" r="4"/>
+    <path d="M12 2v2M12 20v2M4.93 4.93l1.42 1.42m11.3 11.3 1.42 1.42M2 12h2m16 0h2M4.93 19.07l1.42-1.42m11.3-11.3 1.42-1.42"/>
   `);
 
 export const libbiIcon = () =>
@@ -34,16 +31,17 @@ export const libbiIcon = () =>
 
 export const zappiIcon = () =>
   icon(svg`
-    <path d="M5 17H3a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2h11l5 5v5a2 2 0 0 1-2 2h-2"/>
-    <circle cx="7" cy="17" r="2"/>
-    <circle cx="17" cy="17" r="2"/>
-    <path d="M13 6v4l3 2"/>
+    <path d="m4 14 1.5-5a2 2 0 0 1 1.9-1.4h8.2a2 2 0 0 1 1.9 1.4L19 14h1a1 1 0 0 1 1 1v3h-3m-12 0H3v-3a1 1 0 0 1 1-1h15"/>
+    <path d="M7 18h10"/>
+    <circle cx="7" cy="17" r="1.5"/>
+    <circle cx="17" cy="17" r="1.5"/>
   `);
 
 export const eddiIcon = () =>
   icon(svg`
-    <path d="M12 2a5 5 0 0 1 5 5v6a5 5 0 0 1-10 0V7a5 5 0 0 1 5-5z"/>
-    <path d="M12 13v4M8 22h8M10 22v-2h4v2"/>
+    <path d="M4 3v5h7a5 5 0 0 1 5 5"/>
+    <path d="M14 13a5 5 0 0 1 7-4l-3 5a5 5 0 0 1-4-1z"/>
+    <path d="m15 16-.5 1m3-.5-.5 1m3-.5-.5 1"/>
   `);
 
 export const leafIcon = () =>

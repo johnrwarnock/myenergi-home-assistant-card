@@ -174,7 +174,10 @@ function chevDuration(powerW, speed) {
     const abs = Math.abs(powerW);
     if (abs <= 0)
         return 0;
-    return Math.max(0.6, Math.min(3, 3000 / abs));
+    return Math.max(0.6, Math.min(3, 7500 / abs));
+}
+function spokeWidth(powerW) {
+    return Math.min(8, 2 + Math.sqrt(Math.max(0, powerW) / 1000) * 2);
 }
 function renderSpokes(spokes, positions, animSpeed = "auto") {
     const posMap = new Map(positions.map((p) => [p.id, p]));
@@ -196,13 +199,14 @@ function renderSpokes(spokes, positions, animSpeed = "auto") {
         const [x1, y1, x2, y2] = spoke.direction === "in" ? [nx, ny, hx, hy] : [hx, hy, nx, ny];
         const dur = chevDuration(spoke.powerW, animSpeed);
         const isActive = spoke.direction !== "idle" && dur > 0;
+        const width = spokeWidth(spoke.powerW);
         return w `
       <line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}"
-        stroke="${COLORS.spokeTrack}" stroke-width="3" stroke-linecap="round"/>
+        stroke="${COLORS.spokeTrack}" stroke-width="2" stroke-linecap="round"/>
       ${isActive
             ? w `
               <line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}"
-                stroke="${spoke.chevronColor}" stroke-width="4" stroke-linecap="round" opacity="0.45"/>
+                stroke="${spoke.chevronColor}" stroke-width="${width}" stroke-linecap="round" opacity="0.45"/>
               ${[0, 1, 2].map((index) => w `
                   <g>
                     <animateMotion
@@ -214,7 +218,7 @@ function renderSpokes(spokes, positions, animSpeed = "auto") {
                     <path d="M -5 -5 L 0 0 L -5 5"
                       fill="none"
                       stroke="${spoke.chevronColor}"
-                      stroke-width="2.5"
+                      stroke-width="${Math.max(1.5, width * 0.42)}"
                       stroke-linecap="round"
                       stroke-linejoin="round"/>
                   </g>
@@ -236,25 +240,23 @@ const gridIcon = () => icon(w `
     <circle cx="12" cy="12" r="3"/>
   `);
 const solarIcon = () => icon(w `
-    <rect x="2" y="6" width="9" height="6" rx="1"/>
-    <rect x="13" y="6" width="9" height="6" rx="1"/>
-    <rect x="2" y="14" width="9" height="6" rx="1"/>
-    <rect x="13" y="14" width="9" height="6" rx="1"/>
-    <path d="M12 3v2M12 19v2M3 12H1M23 12h-2"/>
+    <circle cx="12" cy="12" r="4"/>
+    <path d="M12 2v2M12 20v2M4.93 4.93l1.42 1.42m11.3 11.3 1.42 1.42M2 12h2m16 0h2M4.93 19.07l1.42-1.42m11.3-11.3 1.42-1.42"/>
   `);
 const libbiIcon = () => icon(w `
     <rect x="6" y="4" width="12" height="18" rx="2"/>
     <path d="M10 2h4M9 9h6M9 13h6M9 17h4"/>
   `);
 const zappiIcon = () => icon(w `
-    <path d="M5 17H3a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2h11l5 5v5a2 2 0 0 1-2 2h-2"/>
-    <circle cx="7" cy="17" r="2"/>
-    <circle cx="17" cy="17" r="2"/>
-    <path d="M13 6v4l3 2"/>
+    <path d="m4 14 1.5-5a2 2 0 0 1 1.9-1.4h8.2a2 2 0 0 1 1.9 1.4L19 14h1a1 1 0 0 1 1 1v3h-3m-12 0H3v-3a1 1 0 0 1 1-1h15"/>
+    <path d="M7 18h10"/>
+    <circle cx="7" cy="17" r="1.5"/>
+    <circle cx="17" cy="17" r="1.5"/>
   `);
 const eddiIcon = () => icon(w `
-    <path d="M12 2a5 5 0 0 1 5 5v6a5 5 0 0 1-10 0V7a5 5 0 0 1 5-5z"/>
-    <path d="M12 13v4M8 22h8M10 22v-2h4v2"/>
+    <path d="M4 3v5h7a5 5 0 0 1 5 5"/>
+    <path d="M14 13a5 5 0 0 1 7-4l-3 5a5 5 0 0 1-4-1z"/>
+    <path d="m15 16-.5 1m3-.5-.5 1m3-.5-.5 1"/>
   `);
 const leafIcon = () => w `<svg viewBox="0 0 24 24" width="20" height="20" fill="#84ff00">
     <path d="M17 8C8 10 5.9 16.17 3.82 21.34L5.71 22l1-2.3A4.49 4.49 0 0 0 8 20C19 20 22 3 22 3c-1 2-8 3-11 4l-1-3.5C12 2 17 2 17 8z"/>
@@ -483,9 +485,7 @@ const DUMMY_HASS = {
 
 function formatPower(w) {
     const abs = Math.abs(w);
-    if (abs >= 1000)
-        return `${(abs / 1000).toFixed(1)} kW`;
-    return `${Math.round(abs)} W`;
+    return `${(abs / 1000).toFixed(1)} kW`;
 }
 class MyenergiFlowCard extends i {
     constructor() {
@@ -540,7 +540,13 @@ class MyenergiFlowCard extends i {
         const subY = labelY + 14;
         return w `
       <circle cx="${pos.cx}" cy="${pos.cy}" r="${NODE_R}"
-        fill="${COLORS.card}" stroke="${stroke}" stroke-width="2.5"/>
+        fill="url(#node-grad-${node.id})" stroke="${stroke}" stroke-width="2.5"/>
+      <defs>
+        <radialGradient id="node-grad-${node.id}" cx="50%" cy="35%" r="70%">
+          <stop offset="0%" stop-color="${stroke}" stop-opacity="0.3"/>
+          <stop offset="100%" stop-color="${COLORS.card}" stop-opacity="0.96"/>
+        </radialGradient>
+      </defs>
       ${useM2Icon
             ? w `
               <foreignObject x="${pos.cx - 12}" y="${pos.cy - 22}" width="24" height="24">
