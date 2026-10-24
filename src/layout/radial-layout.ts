@@ -9,9 +9,8 @@ export interface NodePosition {
 }
 
 /**
- * Places nodes evenly on a circle, first at 12 o'clock, clockwise.
- * Slots are fixed by the id list so a hidden node leaves a gap rather
- * than making everything jump around.
+ * Places the supplied nodes evenly on a circle, first at 12 o'clock,
+ * clockwise. Callers should omit hidden nodes that should not reserve a slot.
  */
 export function radialPositions(
   ids: readonly NodeId[],

@@ -162,9 +162,8 @@ const cardStyles = i$3 `
 `;
 
 /**
- * Places nodes evenly on a circle, first at 12 o'clock, clockwise.
- * Slots are fixed by the id list so a hidden node leaves a gap rather
- * than making everything jump around.
+ * Places the supplied nodes evenly on a circle, first at 12 o'clock,
+ * clockwise. Callers should omit hidden nodes that should not reserve a slot.
  */
 function radialPositions(ids, orbitR = ORBIT_R, cx = CENTRE_X, cy = CENTRE_Y) {
     const n = ids.length;
@@ -657,7 +656,8 @@ class MyenergiFlowCard extends i {
             return A;
         const hass = this.hass ?? DUMMY_HASS;
         const cs = buildState(hass, this.hass ? this._config : DUMMY_CONFIG);
-        const positions = radialPositions(SLOT_ORDER.filter((id) => cs.nodes.some((n) => n.id === id)));
+        const visibleNodeIds = SLOT_ORDER.filter((id) => cs.nodes.some((node) => node.id === id && !node.hidden));
+        const positions = radialPositions(visibleNodeIds);
         const anim = this._config.display?.flow_animation_speed ?? "auto";
         return b `
       <ha-card>

@@ -150,7 +150,10 @@ class MyenergiFlowCard extends LitElement {
     const hass = this.hass ?? DUMMY_HASS;
     const cs: CardState = buildState(hass, this.hass ? this._config : DUMMY_CONFIG);
 
-    const positions = radialPositions(SLOT_ORDER.filter((id) => cs.nodes.some((n) => n.id === id)));
+    const visibleNodeIds = SLOT_ORDER.filter((id) =>
+      cs.nodes.some((node) => node.id === id && !node.hidden)
+    );
+    const positions = radialPositions(visibleNodeIds);
     const anim = this._config.display?.flow_animation_speed ?? "auto";
 
     return html`
