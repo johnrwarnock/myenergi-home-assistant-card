@@ -7,8 +7,20 @@
  *    (set `invert: true` if your sensor is the other way round)
  *  - grid.power_entity: positive = importing (or generator running)
  */
+export interface PopupConfig {
+  /** Pop-up heading. Defaults to the node's name (hub: blank). */
+  title?: string;
+  /** Any Lovelace card config. */
+  card: Record<string, unknown>;
+}
+
 export interface NodeConfig {
   power_entity?: string;
+  /**
+   * Show any Lovelace card in a pop-up when the node is tapped.
+   * Takes priority over tap_entity / more-info.
+   */
+  popup?: PopupConfig;
   /**
    * battery / eddi / zappi: entity opened (more-info + history) when the node
    * is tapped. Defaults to power_entity.
@@ -35,10 +47,7 @@ export interface CardConfig {
      * Show any Lovelace card in a pop-up when the centre is tapped.
      * Takes priority over tap_action.
      */
-    popup?: {
-      title?: string;
-      card: Record<string, unknown>;
-    };
+    popup?: PopupConfig;
   };
 
   home?: NodeConfig;

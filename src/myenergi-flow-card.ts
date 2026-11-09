@@ -11,7 +11,7 @@ import { leafIcon, M2_DEFAULT_ICONS, m2NodeIcon } from "./icons/icons.js";
 import { buildState } from "./state/build-state.js";
 import type { HassLike } from "./state/build-state.js";
 import { DUMMY_CONFIG, DUMMY_HASS } from "./state/dummy-state.js";
-import type { CardConfig } from "./types/config.js";
+import type { CardConfig, NodeConfig, PopupConfig } from "./types/config.js";
 import type { CardState, NodeDef } from "./types/flow.js";
 
 declare global {
@@ -91,7 +91,7 @@ class MyenergiFlowCard extends LitElement {
   }
 
   /** Build the configured card with HA's own helpers and show it in a modal on <body>. */
-  private async _openPopup(popup: { title?: string; card: Record<string, unknown> }) {
+  private async _openPopup(popup: PopupConfig) {
     if (this._popup) return;
     const loader = (window as unknown as { loadCardHelpers?: () => Promise<{
       createCardElement: (c: Record<string, unknown>) => HTMLElement & { hass?: unknown };
@@ -164,12 +164,21 @@ class MyenergiFlowCard extends LitElement {
 
   private _renderNode(node: NodeDef, pos: NodePosition) {
     if (node.hidden) return nothing;
-    const tapEntity = this.hass ? node.tapEntity : undefined;
     const body = this._renderNodeBody(node, pos);
-    if (!tapEntity) return body;
-    const open = () => this._openMoreInfo(tapEntity);
+    if (!this.hass) return body;
+    // Node tap: built-in pop-up if configured, else more-info for tap_entity / power_entity.
+    const popup = (this._config?.[node.id] as NodeConfig | undefined)?.popup;
+    const tapEntity = node.tapEntity;
+    let open: () => void;
+    if (popup?.card) {
+      open = () => void this._openPopup({ ...popup, title: popup.title ?? node.label });
+    } else if (tapEntity) {
+      open = () => this._openMoreInfo(tapEntity);
+    } else {
+      return body;
+    }
     return svg`
-      <g class="tappable" role="button" tabindex="0" aria-label="${node.label} power history"
+      <g class="tappable" role="button" tabindex="0" aria-label="${popup?.card ? node.label : `${node.label} power history`}"
         @click=${open}
         @keydown=${(e: KeyboardEvent) => {
           if (e.key === "Enter" || e.key === " ") { e.preventDefault(); open(); }

@@ -37,6 +37,12 @@ battery:
   name: Batteries
   power_entity: sensor.battery_power    # + discharging / - charging (invert: true to flip)
   soc_entity: sensor.battery_soc
+  popup:                                # optional on any node: show a card instead of more-info
+    title: Batteries – today            # defaults to the node's name
+    card:
+      type: history-graph
+      entities:
+        - sensor.battery_soc
   idle_threshold_w: 100                 # net flow under this shows the battery as idle (default 100)
 grid:
   name: Generator                       # or Grid
@@ -48,7 +54,7 @@ display:
   idle_threshold_w: 30
 ```
 
-Tapping solar, home, battery, eddi or zappi opens Home Assistant's more-info dialog (with history) for that node's `power_entity`; set `tap_entity` on the node to open a different entity, e.g. a daily kWh sensor.
+Tapping solar, home, battery, eddi or zappi opens Home Assistant's more-info dialog (with history) for that node's `power_entity`; set `tap_entity` on the node to open a different entity, e.g. a daily kWh sensor. Give a node a `popup:` (same shape as `hub.popup`) to show any Lovelace card in the built-in pop-up instead; its title defaults to the node's name.
 
 Tapping the centre opens `hub.popup` if set (no browser_mod needed; close with ✕, Escape or tapping outside). Otherwise it runs `hub.tap_action`, so it can navigate to a view, open more-info, or open a popup (e.g. `fire-dom-event` with browser_mod). Set `action: none` to disable it.
 

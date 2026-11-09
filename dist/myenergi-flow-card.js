@@ -697,13 +697,24 @@ class MyenergiFlowCard extends i {
     _renderNode(node, pos) {
         if (node.hidden)
             return A;
-        const tapEntity = this.hass ? node.tapEntity : undefined;
         const body = this._renderNodeBody(node, pos);
-        if (!tapEntity)
+        if (!this.hass)
             return body;
-        const open = () => this._openMoreInfo(tapEntity);
+        // Node tap: built-in pop-up if configured, else more-info for tap_entity / power_entity.
+        const popup = this._config?.[node.id]?.popup;
+        const tapEntity = node.tapEntity;
+        let open;
+        if (popup?.card) {
+            open = () => void this._openPopup({ ...popup, title: popup.title ?? node.label });
+        }
+        else if (tapEntity) {
+            open = () => this._openMoreInfo(tapEntity);
+        }
+        else {
+            return body;
+        }
         return w `
-      <g class="tappable" role="button" tabindex="0" aria-label="${node.label} power history"
+      <g class="tappable" role="button" tabindex="0" aria-label="${popup?.card ? node.label : `${node.label} power history`}"
         @click=${open}
         @keydown=${(e) => {
             if (e.key === "Enter" || e.key === " ") {
