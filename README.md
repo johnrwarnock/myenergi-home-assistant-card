@@ -9,7 +9,11 @@ type: custom:myenergi-flow-card
 title: Right now                 # optional
 hub:
   self_consumption_entity: sensor.solar_share_of_load   # optional, otherwise calculated
-  tap_action:                     # optional; any standard HA action. Default: the Energy dashboard
+  popup:                          # optional: show any card in a pop-up when the centre is tapped
+    title: Solar & battery – today
+    card:                         # any Lovelace card config
+      type: energy-distribution
+  tap_action:                     # used when there's no popup; any standard HA action. Default: the Energy dashboard
     action: navigate
     navigation_path: /energy
 solar:
@@ -46,6 +50,6 @@ display:
 
 Tapping solar, home, battery, eddi or zappi opens Home Assistant's more-info dialog (with history) for that node's `power_entity`; set `tap_entity` on the node to open a different entity, e.g. a daily kWh sensor.
 
-Tapping the centre runs `hub.tap_action`, so it can navigate to a view, open more-info, or open a popup (e.g. `fire-dom-event` with browser_mod). Set `action: none` to disable it.
+Tapping the centre opens `hub.popup` if set (no browser_mod needed; close with ✕, Escape or tapping outside). Otherwise it runs `hub.tap_action`, so it can navigate to a view, open more-info, or open a popup (e.g. `fire-dom-event` with browser_mod). Set `action: none` to disable it.
 
 Any node you leave out isn't drawn. Power entities in kW are converted automatically. Icons are any `mdi:` icon. Inactive nodes don't show a power reading; the home reading remains visible above its circle. A check appears next to eddi when its status is "Max temp reached", and next to zappi when its `status_entity` reports "Fully charged", "Charge complete", "Completed", or "Charged", and next to the battery when SoC is above 98% and it isn't charging. A crossed-out plug appears next to zappi when `plug_entity` (or `status_entity`) reports "EV Disconnected".

@@ -31,6 +31,14 @@ export interface CardConfig {
      * url, perform-action, fire-dom-event…). Defaults to the Energy dashboard.
      */
     tap_action?: Record<string, unknown>;
+    /**
+     * Show any Lovelace card in a pop-up when the centre is tapped.
+     * Takes priority over tap_action.
+     */
+    popup?: {
+      title?: string;
+      card: Record<string, unknown>;
+    };
   };
 
   home?: NodeConfig;

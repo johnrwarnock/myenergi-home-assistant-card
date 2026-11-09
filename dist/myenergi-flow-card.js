@@ -572,6 +572,10 @@ class MyenergiFlowCard extends i {
         super(...arguments);
         this.hass = null;
         this._config = null;
+        this._popup = null;
+        this._popupCard = null;
+        this._popupKey = (e) => { if (e.key === "Escape")
+            this._closePopup(); };
     }
     setConfig(config) {
         if (!config)
@@ -589,6 +593,9 @@ class MyenergiFlowCard extends i {
     }
     /** Only re-render when an entity we care about changes. */
     shouldUpdate(changed) {
+        // keep the pop-up's card live even when the flow card itself doesn't re-render
+        if (this._popupCard && changed.has("hass"))
+            this._popupCard.hass = this.hass;
         if (changed.has("_config") || !this._config)
             return true;
         const oldHass = changed.get("hass");
@@ -616,8 +623,67 @@ class MyenergiFlowCard extends i {
             composed: true,
         }));
     }
-    /** Hand the hub's tap_action to HA's own action handler. */
+    disconnectedCallback() {
+        super.disconnectedCallback();
+        this._closePopup();
+    }
+    /** Build the configured card with HA's own helpers and show it in a modal on <body>. */
+    async _openPopup(popup) {
+        if (this._popup)
+            return;
+        const loader = window.loadCardHelpers;
+        if (!loader)
+            return;
+        const helpers = await loader();
+        const cardEl = helpers.createCardElement(popup.card);
+        cardEl.hass = this.hass;
+        const overlay = document.createElement("div");
+        overlay.setAttribute("role", "dialog");
+        overlay.setAttribute("aria-modal", "true");
+        overlay.style.cssText =
+            "position:fixed;inset:0;z-index:1000;display:flex;align-items:center;justify-content:center;" +
+                "background:rgba(0,0,0,.6);padding:16px;box-sizing:border-box;";
+        const panel = document.createElement("div");
+        panel.style.cssText =
+            "width:100%;max-width:520px;max-height:90vh;overflow:auto;box-sizing:border-box;" +
+                "background:var(--card-background-color,#1c1c1c);color:var(--primary-text-color,#fff);" +
+                "border-radius:16px;box-shadow:0 12px 36px #000a;padding:8px;";
+        const head = document.createElement("div");
+        head.style.cssText =
+            "display:flex;align-items:center;justify-content:space-between;padding:8px 8px 12px;" +
+                "font-size:18px;font-family:var(--paper-font-body1_-_font-family,sans-serif);";
+        const title = document.createElement("span");
+        title.textContent = popup.title ?? "";
+        const close = document.createElement("button");
+        close.setAttribute("aria-label", "Close");
+        close.textContent = "✕";
+        close.style.cssText =
+            "background:none;border:0;color:inherit;font-size:20px;cursor:pointer;padding:4px 8px;";
+        close.addEventListener("click", () => this._closePopup());
+        head.append(title, close);
+        panel.append(head, cardEl);
+        overlay.append(panel);
+        overlay.addEventListener("click", (e) => { if (e.target === overlay)
+            this._closePopup(); });
+        document.addEventListener("keydown", this._popupKey);
+        document.body.append(overlay);
+        this._popup = overlay;
+        this._popupCard = cardEl;
+        close.focus();
+    }
+    _closePopup() {
+        this._popup?.remove();
+        this._popup = null;
+        this._popupCard = null;
+        document.removeEventListener("keydown", this._popupKey);
+    }
+    /** Centre tap: built-in pop-up if configured, else HA's own action handler. */
     _hubTap() {
+        const popup = this._config?.hub?.popup;
+        if (popup?.card) {
+            void this._openPopup(popup);
+            return;
+        }
         const tapAction = this._config?.hub?.tap_action ?? {
             action: "navigate",
             navigation_path: "/energy",
@@ -717,7 +783,8 @@ class MyenergiFlowCard extends i {
     `;
     }
     _renderHub(selfPct) {
-        const tappable = !!this.hass && this._config?.hub?.tap_action?.action !== "none";
+        const hub = this._config?.hub;
+        const tappable = !!this.hass && (!!hub?.popup?.card || hub?.tap_action?.action !== "none");
         const body = this._renderHubBody(selfPct);
         if (!tappable)
             return body;
