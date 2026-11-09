@@ -11,6 +11,10 @@ export interface NodeDef {
   houseMood?: "smile" | "neutral" | "frown";
   active: boolean;
   complete?: boolean;
+  /** zappi only: no car plugged in */
+  unplugged?: boolean;
+  /** Entity whose more-info dialog opens when the node is tapped */
+  tapEntity?: string;
   hidden?: boolean;
 }
 

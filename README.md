@@ -25,10 +25,12 @@ zappi:
   power_entity: sensor.zappi_power
   mode_entity: select.zappi_charge_mode
   status_entity: sensor.zappi_status      # set this to show the check when fully charged
+  plug_entity: sensor.zappi_plug_status   # shows a crossed-out plug when no car is connected
 battery:
   name: Batteries
   power_entity: sensor.battery_power    # + discharging / - charging (invert: true to flip)
   soc_entity: sensor.battery_soc
+  idle_threshold_w: 100                 # net flow under this shows the battery as idle (default 100)
 grid:
   name: Generator                       # or Grid
   icon: mdi:generator-stationary
@@ -39,4 +41,6 @@ display:
   idle_threshold_w: 30
 ```
 
-Any node you leave out isn't drawn. Power entities in kW are converted automatically. Icons are any `mdi:` icon. Inactive nodes don't show a power reading; the home reading remains visible above its circle. A check appears next to eddi when its status is "Max temp reached", and next to zappi when its `status_entity` reports "Fully charged", "Charge complete", "Completed", or "Charged".
+Tapping the battery, eddi or zappi opens Home Assistant's more-info dialog (with history) for that node's `power_entity`; set `tap_entity` on the node to open a different entity, e.g. a daily kWh sensor.
+
+Any node you leave out isn't drawn. Power entities in kW are converted automatically. Icons are any `mdi:` icon. Inactive nodes don't show a power reading; the home reading remains visible above its circle. A check appears next to eddi when its status is "Max temp reached", and next to zappi when its `status_entity` reports "Fully charged", "Charge complete", "Completed", or "Charged", and next to the battery when SoC is above 98% and it isn't charging. A crossed-out plug appears next to zappi when `plug_entity` (or `status_entity`) reports "EV Disconnected".

@@ -52,6 +52,9 @@ export function buildState(hass: HassLike, cfg: CardConfig): CardState {
 
   let battW = readPowerW(hass, cfg.battery?.power_entity) ?? 0;
   if (cfg.battery?.invert) battW = -battW;
+  // Net battery flow under this (default 0.1 kW, either direction) counts as idle.
+  const battThr = cfg.battery?.idle_threshold_w ?? 100;
+  if (Math.abs(battW) < battThr) battW = 0;
   const battDischargeW = pos(battW);
   const battChargeW = pos(-battW);
   const soc = readNumber(hass, cfg.battery?.soc_entity);
@@ -141,6 +144,7 @@ export function buildState(hass: HassLike, cfg: CardConfig): CardState {
         subLabel: eddiStatus,
         active: eddiActive,
         complete: eddiAtMaxTemp,
+        tapEntity: cfg.eddi.tap_entity ?? cfg.eddi.power_entity,
       },
       {
         node: "eddi",
@@ -153,6 +157,15 @@ export function buildState(hass: HassLike, cfg: CardConfig): CardState {
 
   if (cfg.zappi?.power_entity) {
     const zappiStatus = readText(hass, cfg.zappi.status_entity);
+    const plugStatus = readText(hass, cfg.zappi.plug_entity);
+    // ha-myenergi plug status reports "EV Disconnected"; also accept the main status.
+    const unplugged = [plugStatus, zappiStatus].some((st) =>
+      hasStatus(st, /\b(?:ev\s+)?disconnected\b|\bunplugged\b|\bnot\s+(?:connected|plugged)\b/i)
+    );
+    const zappiComplete = !unplugged && hasStatus(
+      zappiStatus,
+      /\b(?:fully\s+charged|charge\s+complete(?:d)?|completed|charged)\b/i
+    );
     add(
       {
         id: "zappi",
@@ -162,20 +175,20 @@ export function buildState(hass: HassLike, cfg: CardConfig): CardState {
         powerW: zappiW,
         subLabel: readText(hass, cfg.zappi.mode_entity),
         active: zappiW > thr,
-        complete: hasStatus(
-          zappiStatus,
-          /^(?:fully\s+charged|charge\s+complete(?:d)?|completed|charged)$/i
-        ),
+        complete: zappiComplete,
+        unplugged,
+        tapEntity: cfg.zappi.tap_entity ?? cfg.zappi.power_entity,
       },
       { node: "zappi", powerW: zappiW, direction: idleOut(zappiW), chevronColor: mixColour }
     );
   }
 
   if (cfg.battery?.power_entity) {
-    const action =
-      battChargeW > thr ? "charging" : battDischargeW > thr ? "discharging" : "resting";
+    // battW was already zeroed below battThr, so anything non-zero is a real flow.
+    const charging = battChargeW > 0;
+    const discharging = battDischargeW > 0;
+    const action = charging ? "charging" : discharging ? "discharging" : "resting";
     const sub = soc !== null ? `${Math.round(soc)}% · ${action}` : action;
-    const charging = battChargeW > thr;
     add(
       {
         id: "battery",
@@ -185,12 +198,14 @@ export function buildState(hass: HassLike, cfg: CardConfig): CardState {
         powerW: charging ? battChargeW : battDischargeW,
         subLabel: sub,
         socPct: soc === null ? null : Math.max(0, Math.min(100, soc)),
-        active: battChargeW > thr || battDischargeW > thr,
+        active: charging || discharging,
+        complete: soc !== null && soc > 98 && !charging,
+        tapEntity: cfg.battery.tap_entity ?? cfg.battery.power_entity,
       },
       {
         node: "battery",
         powerW: Math.abs(battW),
-        direction: charging ? "out" : idleIn(battDischargeW),
+        direction: charging ? "out" : discharging ? "in" : "idle",
         chevronColor: charging ? mixColour : COLORS.battery,
       }
     );

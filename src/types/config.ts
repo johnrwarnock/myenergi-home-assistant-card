@@ -9,6 +9,11 @@
  */
 export interface NodeConfig {
   power_entity?: string;
+  /**
+   * battery / eddi / zappi: entity opened (more-info + history) when the node
+   * is tapped. Defaults to power_entity.
+   */
+  tap_entity?: string;
   name?: string;
   icon?: string;
 }
@@ -32,6 +37,8 @@ export interface CardConfig {
   battery?: NodeConfig & {
     soc_entity?: string;
     invert?: boolean;
+    /** Net flow below this many watts shows the battery as idle. Default 100. */
+    idle_threshold_w?: number;
   };
 
   /** Grid connection, or generator for off-grid sites. */
@@ -45,6 +52,8 @@ export interface CardConfig {
     mode_entity?: string;
     /** e.g. sensor.zappi_status — used to show a check when fully charged */
     status_entity?: string;
+    /** e.g. sensor.zappi_plug_status — shows a crossed-out plug when no car is connected */
+    plug_entity?: string;
   };
 
   eddi?: NodeConfig & {

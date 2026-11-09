@@ -147,6 +147,16 @@ const cardStyles = i$3 `
     color: #ffffff;
   }
 
+  .tappable {
+    cursor: pointer;
+    outline: none;
+  }
+
+  .tappable:focus-visible > circle:first-child {
+    stroke: #ffffff55;
+    stroke-width: 1.5;
+  }
+
   .node-icon.idle {
     color: #8a8a8a;
   }
@@ -362,6 +372,10 @@ function buildState(hass, cfg) {
     let battW = readPowerW(hass, cfg.battery?.power_entity) ?? 0;
     if (cfg.battery?.invert)
         battW = -battW;
+    // Net battery flow under this (default 0.1 kW, either direction) counts as idle.
+    const battThr = cfg.battery?.idle_threshold_w ?? 100;
+    if (Math.abs(battW) < battThr)
+        battW = 0;
     const battDischargeW = pos(battW);
     const battChargeW = pos(-battW);
     const soc = readNumber(hass, cfg.battery?.soc_entity);
@@ -437,6 +451,7 @@ function buildState(hass, cfg) {
             subLabel: eddiStatus,
             active: eddiActive,
             complete: eddiAtMaxTemp,
+            tapEntity: cfg.eddi.tap_entity ?? cfg.eddi.power_entity,
         }, {
             node: "eddi",
             powerW: eddiW,
@@ -446,6 +461,10 @@ function buildState(hass, cfg) {
     }
     if (cfg.zappi?.power_entity) {
         const zappiStatus = readText(hass, cfg.zappi.status_entity);
+        const plugStatus = readText(hass, cfg.zappi.plug_entity);
+        // ha-myenergi plug status reports "EV Disconnected"; also accept the main status.
+        const unplugged = [plugStatus, zappiStatus].some((st) => hasStatus(st, /\b(?:ev\s+)?disconnected\b|\bunplugged\b|\bnot\s+(?:connected|plugged)\b/i));
+        const zappiComplete = !unplugged && hasStatus(zappiStatus, /\b(?:fully\s+charged|charge\s+complete(?:d)?|completed|charged)\b/i);
         add({
             id: "zappi",
             label: cfg.zappi.name ?? "zappi",
@@ -454,13 +473,17 @@ function buildState(hass, cfg) {
             powerW: zappiW,
             subLabel: readText(hass, cfg.zappi.mode_entity),
             active: zappiW > thr,
-            complete: hasStatus(zappiStatus, /^(?:fully\s+charged|charge\s+complete(?:d)?|completed|charged)$/i),
+            complete: zappiComplete,
+            unplugged,
+            tapEntity: cfg.zappi.tap_entity ?? cfg.zappi.power_entity,
         }, { node: "zappi", powerW: zappiW, direction: idleOut(zappiW), chevronColor: mixColour });
     }
     if (cfg.battery?.power_entity) {
-        const action = battChargeW > thr ? "charging" : battDischargeW > thr ? "discharging" : "resting";
+        // battW was already zeroed below battThr, so anything non-zero is a real flow.
+        const charging = battChargeW > 0;
+        const discharging = battDischargeW > 0;
+        const action = charging ? "charging" : discharging ? "discharging" : "resting";
         const sub = soc !== null ? `${Math.round(soc)}% · ${action}` : action;
-        const charging = battChargeW > thr;
         add({
             id: "battery",
             label: cfg.battery.name ?? "battery",
@@ -469,11 +492,13 @@ function buildState(hass, cfg) {
             powerW: charging ? battChargeW : battDischargeW,
             subLabel: sub,
             socPct: soc === null ? null : Math.max(0, Math.min(100, soc)),
-            active: battChargeW > thr || battDischargeW > thr,
+            active: charging || discharging,
+            complete: soc !== null && soc > 98 && !charging,
+            tapEntity: cfg.battery.tap_entity ?? cfg.battery.power_entity,
         }, {
             node: "battery",
             powerW: Math.abs(battW),
-            direction: charging ? "out" : idleIn(battDischargeW),
+            direction: charging ? "out" : discharging ? "in" : "idle",
             chevronColor: charging ? mixColour : COLORS.battery,
         });
     }
@@ -577,13 +602,41 @@ class MyenergiFlowCard extends i {
             c.home?.power_entity,
             c.battery?.power_entity, c.battery?.soc_entity,
             c.grid?.power_entity,
-            c.zappi?.power_entity, c.zappi?.mode_entity, c.zappi?.status_entity,
+            c.zappi?.power_entity, c.zappi?.mode_entity, c.zappi?.status_entity, c.zappi?.plug_entity,
             c.eddi?.power_entity, c.eddi?.status_entity,
         ].filter((x) => !!x);
+    }
+    /** Open HA's more-info dialog (current value + history graph) for an entity. */
+    _openMoreInfo(entityId) {
+        this.dispatchEvent(new CustomEvent("hass-more-info", {
+            detail: { entityId },
+            bubbles: true,
+            composed: true,
+        }));
     }
     _renderNode(node, pos) {
         if (node.hidden)
             return A;
+        const tapEntity = this.hass ? node.tapEntity : undefined;
+        const body = this._renderNodeBody(node, pos);
+        if (!tapEntity)
+            return body;
+        const open = () => this._openMoreInfo(tapEntity);
+        return w `
+      <g class="tappable" role="button" tabindex="0" aria-label="${node.label} power history"
+        @click=${open}
+        @keydown=${(e) => {
+            if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                open();
+            }
+        }}>
+        <circle cx="${pos.cx}" cy="${pos.cy}" r="${NODE_R + 14}" fill="transparent"/>
+        ${body}
+      </g>
+    `;
+    }
+    _renderNodeBody(node, pos) {
         const stroke = node.active ? node.color : COLORS.dim;
         const valueColour = node.active ? node.color : COLORS.muted;
         const useM2Icon = node.icon === M2_DEFAULT_ICONS[node.id];
@@ -630,6 +683,22 @@ class MyenergiFlowCard extends i {
                 fill="none" stroke="#ffffff" stroke-width="2"
                 stroke-linecap="round" stroke-linejoin="round"/>
             `
+            : A}
+      ${node.unplugged
+            ? (() => {
+                const bx = pos.cx + NODE_R * 0.72;
+                const by = pos.cy - NODE_R * 0.72;
+                return w `
+                <circle cx="${bx}" cy="${by}" r="10"
+                  fill="${COLORS.card}" stroke="${COLORS.muted}" stroke-width="2"/>
+                <g transform="translate(${bx - 6} ${by - 6}) scale(0.5)"
+                  fill="none" stroke="#ffffff" stroke-width="2.4"
+                  stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M9 2v5M15 2v5M6 7h12v4a6 6 0 0 1-12 0zM12 17v5"/>
+                  <path d="M3 3l18 18"/>
+                </g>
+              `;
+            })()
             : A}
     `;
     }

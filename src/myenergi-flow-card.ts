@@ -64,13 +64,41 @@ class MyenergiFlowCard extends LitElement {
       c.home?.power_entity,
       c.battery?.power_entity, c.battery?.soc_entity,
       c.grid?.power_entity,
-      c.zappi?.power_entity, c.zappi?.mode_entity, c.zappi?.status_entity,
+      c.zappi?.power_entity, c.zappi?.mode_entity, c.zappi?.status_entity, c.zappi?.plug_entity,
       c.eddi?.power_entity, c.eddi?.status_entity,
     ].filter((x): x is string => !!x);
   }
 
+  /** Open HA's more-info dialog (current value + history graph) for an entity. */
+  private _openMoreInfo(entityId: string) {
+    this.dispatchEvent(
+      new CustomEvent("hass-more-info", {
+        detail: { entityId },
+        bubbles: true,
+        composed: true,
+      })
+    );
+  }
+
   private _renderNode(node: NodeDef, pos: NodePosition) {
     if (node.hidden) return nothing;
+    const tapEntity = this.hass ? node.tapEntity : undefined;
+    const body = this._renderNodeBody(node, pos);
+    if (!tapEntity) return body;
+    const open = () => this._openMoreInfo(tapEntity);
+    return svg`
+      <g class="tappable" role="button" tabindex="0" aria-label="${node.label} power history"
+        @click=${open}
+        @keydown=${(e: KeyboardEvent) => {
+          if (e.key === "Enter" || e.key === " ") { e.preventDefault(); open(); }
+        }}>
+        <circle cx="${pos.cx}" cy="${pos.cy}" r="${NODE_R + 14}" fill="transparent"/>
+        ${body}
+      </g>
+    `;
+  }
+
+  private _renderNodeBody(node: NodeDef, pos: NodePosition) {
     const stroke = node.active ? node.color : COLORS.dim;
     const valueColour = node.active ? node.color : COLORS.muted;
     const useM2Icon = node.icon === M2_DEFAULT_ICONS[node.id];
@@ -123,6 +151,24 @@ class MyenergiFlowCard extends LitElement {
                 fill="none" stroke="#ffffff" stroke-width="2"
                 stroke-linecap="round" stroke-linejoin="round"/>
             `
+          : nothing
+      }
+      ${
+        node.unplugged
+          ? (() => {
+              const bx = pos.cx + NODE_R * 0.72;
+              const by = pos.cy - NODE_R * 0.72;
+              return svg`
+                <circle cx="${bx}" cy="${by}" r="10"
+                  fill="${COLORS.card}" stroke="${COLORS.muted}" stroke-width="2"/>
+                <g transform="translate(${bx - 6} ${by - 6}) scale(0.5)"
+                  fill="none" stroke="#ffffff" stroke-width="2.4"
+                  stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M9 2v5M15 2v5M6 7h12v4a6 6 0 0 1-12 0zM12 17v5"/>
+                  <path d="M3 3l18 18"/>
+                </g>
+              `;
+            })()
           : nothing
       }
     `;

@@ -57,6 +57,16 @@ export const cardStyles = css`
     color: #ffffff;
   }
 
+  .tappable {
+    cursor: pointer;
+    outline: none;
+  }
+
+  .tappable:focus-visible > circle:first-child {
+    stroke: #ffffff55;
+    stroke-width: 1.5;
+  }
+
   .node-icon.idle {
     color: #8a8a8a;
   }
