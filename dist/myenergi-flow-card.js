@@ -420,6 +420,7 @@ function buildState(hass, cfg) {
             powerW: solarW,
             subLabel: today !== null ? `${today.toFixed(1)} kWh today` : undefined,
             active: solarW > thr,
+            tapEntity: cfg.solar.tap_entity ?? cfg.solar.power_entity,
         }, { node: "solar", powerW: solarW, direction: idleIn(solarW), chevronColor: COLORS.solar });
     }
     if (cfg.home?.power_entity) {
@@ -435,6 +436,7 @@ function buildState(hass, cfg) {
                     ? "smile"
                     : "neutral",
             active: homeW > thr,
+            tapEntity: cfg.home.tap_entity ?? cfg.home.power_entity,
         }, { node: "home", powerW: homeW, direction: idleOut(homeW), chevronColor: mixColour });
     }
     if (cfg.eddi?.power_entity) {
@@ -614,6 +616,18 @@ class MyenergiFlowCard extends i {
             composed: true,
         }));
     }
+    /** Hand the hub's tap_action to HA's own action handler. */
+    _hubTap() {
+        const tapAction = this._config?.hub?.tap_action ?? {
+            action: "navigate",
+            navigation_path: "/energy",
+        };
+        this.dispatchEvent(new CustomEvent("hass-action", {
+            detail: { config: { tap_action: tapAction }, action: "tap" },
+            bubbles: true,
+            composed: true,
+        }));
+    }
     _renderNode(node, pos) {
         if (node.hidden)
             return A;
@@ -703,6 +717,24 @@ class MyenergiFlowCard extends i {
     `;
     }
     _renderHub(selfPct) {
+        const tappable = !!this.hass && this._config?.hub?.tap_action?.action !== "none";
+        const body = this._renderHubBody(selfPct);
+        if (!tappable)
+            return body;
+        return w `
+      <g class="tappable" role="button" tabindex="0" aria-label="Solar and battery today"
+        @click=${() => this._hubTap()}
+        @keydown=${(e) => {
+            if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                this._hubTap();
+            }
+        }}>
+        ${body}
+      </g>
+    `;
+    }
+    _renderHubBody(selfPct) {
         return w `
       <defs>
         <radialGradient id="hub-grad" cx="50%" cy="50%" r="50%">

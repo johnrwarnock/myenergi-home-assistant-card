@@ -102,6 +102,7 @@ export function buildState(hass: HassLike, cfg: CardConfig): CardState {
         powerW: solarW,
         subLabel: today !== null ? `${today.toFixed(1)} kWh today` : undefined,
         active: solarW > thr,
+        tapEntity: cfg.solar.tap_entity ?? cfg.solar.power_entity,
       },
       { node: "solar", powerW: solarW, direction: idleIn(solarW), chevronColor: COLORS.solar }
     );
@@ -121,6 +122,7 @@ export function buildState(hass: HassLike, cfg: CardConfig): CardState {
             ? "smile"
             : "neutral",
         active: homeW > thr,
+        tapEntity: cfg.home.tap_entity ?? cfg.home.power_entity,
       },
       { node: "home", powerW: homeW, direction: idleOut(homeW), chevronColor: mixColour }
     );

@@ -80,6 +80,21 @@ class MyenergiFlowCard extends LitElement {
     );
   }
 
+  /** Hand the hub's tap_action to HA's own action handler. */
+  private _hubTap() {
+    const tapAction = this._config?.hub?.tap_action ?? {
+      action: "navigate",
+      navigation_path: "/energy",
+    };
+    this.dispatchEvent(
+      new CustomEvent("hass-action", {
+        detail: { config: { tap_action: tapAction }, action: "tap" },
+        bubbles: true,
+        composed: true,
+      })
+    );
+  }
+
   private _renderNode(node: NodeDef, pos: NodePosition) {
     if (node.hidden) return nothing;
     const tapEntity = this.hass ? node.tapEntity : undefined;
@@ -175,6 +190,21 @@ class MyenergiFlowCard extends LitElement {
   }
 
   private _renderHub(selfPct: number | null) {
+    const tappable = !!this.hass && this._config?.hub?.tap_action?.action !== "none";
+    const body = this._renderHubBody(selfPct);
+    if (!tappable) return body;
+    return svg`
+      <g class="tappable" role="button" tabindex="0" aria-label="Solar and battery today"
+        @click=${() => this._hubTap()}
+        @keydown=${(e: KeyboardEvent) => {
+          if (e.key === "Enter" || e.key === " ") { e.preventDefault(); this._hubTap(); }
+        }}>
+        ${body}
+      </g>
+    `;
+  }
+
+  private _renderHubBody(selfPct: number | null) {
     return svg`
       <defs>
         <radialGradient id="hub-grad" cx="50%" cy="50%" r="50%">

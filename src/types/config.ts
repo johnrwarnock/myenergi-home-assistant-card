@@ -26,6 +26,11 @@ export interface CardConfig {
   hub?: {
     /** Entity giving self-consumption / solar share %, otherwise calculated. */
     self_consumption_entity?: string;
+    /**
+     * Standard HA action run when the centre is tapped (navigate, more-info,
+     * url, perform-action, fire-dom-event…). Defaults to the Energy dashboard.
+     */
+    tap_action?: Record<string, unknown>;
   };
 
   home?: NodeConfig;
