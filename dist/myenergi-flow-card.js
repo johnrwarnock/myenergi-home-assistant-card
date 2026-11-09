@@ -68,13 +68,13 @@ const t=globalThis,i$1=t=>t,s$2=t.trustedTypes,e=s$2?s$2.createPolicy("lit-html"
 const COLORS = {
     card: "#303030",
     stroke: "#3a3a3a",
-    grid: "#FF4400",
+    grid: "#F91561",
     solar: "#55FF00",
     zappi: "#0086FF",
-    eddi: "#00E6C0",
+    eddi: "#56C1DD",
     home: "#F91CDF",
     battery: "#FF9234",
-    leafGreen: "#84ff00",
+    leafGreen: "#55FF00",
     muted: "#cecdcd",
     dim: "#6b6b6b",
     spokeTrack: "rgba(255,255,255,0.12)",
@@ -298,7 +298,7 @@ const eddiIcon = () => icon(w `
     <path d="M4 16v2m4-2v2m4-2v2m4-2v2"/>
   `);
 const leafIcon = () => w `<svg viewBox="0 0 24 24" width="20" height="20">
-    <path fill="#84ff00" d="M2 1c8 0 15 3 18 9 3 6-1 12-7 13C7 24 2 18 2 11 2 7 2 3 2 1z"/>
+    <path fill="#55FF00" d="M2 1c8 0 15 3 18 9 3 6-1 12-7 13C7 24 2 18 2 11 2 7 2 3 2 1z"/>
     <path d="M4 3 20 21M8 8l-4 1m8 3-5 1m9-1 2-4m-5 9 3-1"
       fill="none" stroke="#1a1a1a" stroke-width="0.65" stroke-linecap="round"/>
   </svg>`;
